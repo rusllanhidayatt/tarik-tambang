@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 🌌 Style global tambahan */
+:root {
+  --glass: rgba(255, 255, 255, 0.04);
+}
+
+/* Body base style */
+body {
+  @apply bg-slate-900 text-slate-100 antialiased selection:bg-sky-500 selection:text-white;
+}
+
+/* ✨ Card component */
+.card {
+  @apply bg-[rgba(255,255,255,0.03)] backdrop-blur-lg rounded-2xl p-6 shadow-xl border border-slate-800 transition-all duration-300;
+}
+
+/* 🔘 Button component */
+.button {
+  @apply inline-flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-600 active:bg-sky-700 
+  text-white font-semibold px-4 py-2 rounded-lg shadow-lg transition-all duration-300 hover:scale-[1.03];
+}
+
+/* 🧩 Input field */
+.input {
+  @apply w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 
+  focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition;
+}
+
+/* ℹ️ Small text */
+.small {
+  @apply text-slate-400 text-sm;
+}
+
+/* 🪢 Tug-of-war visuals */
+.tug-track {
+  @apply relative bg-slate-900 h-16 rounded-full overflow-hidden shadow-inner border border-slate-800 mt-6;
+}
+
+.tug-handle {
+  @apply absolute top-1/2 -translate-y-1/2 w-40 h-14 rounded-md flex items-center justify-center font-bold text-white text-lg;
+  transition: all 0.3s ease-in-out;
+}
+
+.tug-left {
+  background: linear-gradient(90deg, #ef4444, #f97316);
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+}
+
+.tug-right {
+  background: linear-gradient(90deg, #10b981, #06b6d4);
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+}
+
+/* ✨ Fancy hover + transition helpers */
+.fade-in {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,37 +1,162 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tarik Tambang — Quiz Multiplayer
 
-## Getting Started
+Game quiz **tim merah vs tim biru** berbasis realtime & sesi terbatas.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🎮 Cara Main (Untuk Pemain)
+
+1. Masuk ke game lewat URL utama:
+
+   > [https://domainkamu.com](https://domainkamu.com)
+2. Isi nama sesuai daftar yang sudah terdaftar di file `players.ts`
+
+   * Bisa pakai **nama lengkap** atau **alias**
+3. Setelah masuk → kamu langsung ke halaman **Play**
+4. Jawab pertanyaan yang muncul
+
+   * ✅ Benar → tim menang 1 poin + efek spark
+   * ❌ Salah → bunyi boop
+5. Skor tim ditampilkan **realtime** di tampilan game
+6. Game berjalan dalam **sesi** (default: 1 jam)
+7. Kalau pindah device/login lagi:
+
+   * Selama sesi **belum habis**, status tetap tersimpan
+   * Kalau sesi habis → harus login ulang saat admin buka sesi baru
+
+> Semua data login **hanya disimpan di browser** (`sessionStorage`)
+
+---
+
+## 🧩 Alur Aplikasi
+
+| Role           | URL                                | Fitur                                 |
+| -------------- | ---------------------------------- | ------------------------------------- |
+| Pemain         | `/`                                | Login nama → main quiz                |
+| Game View (TV) | `/admin`                           | Tampilan animasi tarik tambang & skor |
+| Admin          | `/admin`                           | Kelola sesi, kontrol soal, reset, dsb |
+| Datasource     | `/datasource` atau custom endpoint | Menyediakan daftar pertanyaan         |
+
+---
+
+## 🧑‍💻 Admin Panel (Sederhana)
+
+* Set **durasi sesi**
+* Push **pertanyaan** ke semua pemain
+* **Start / Pause / End** sesi
+* Reset skor & status pemain
+
+> Admin login juga pakai nama yang ada di `players.ts` (role admin ditentukan dari config)
+
+---
+
+## 🔊 / 🎨 Asset
+
+Taruh semua asset di folder:
+
+```
+public/
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### ✅ Sudah dipakai
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+* `boy.png`
+* `girl.png`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 📌 Tambahan Sound Effect
 
-## Learn More
+```
+/public/sfx/point.wav   → efek poin + spark
+/public/sfx/wrong.wav   → efek jawaban salah (boop)
+/public/sfx/win.mp3     → efek kemenangan / fanfare
+```
 
-To learn more about Next.js, take a look at the following resources:
+> Boleh pakai **placeholder** terlebih dahulu (durasi 1 detik)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🧱 Struktur Utama Project
 
-## Deploy on Vercel
+```
+src/
+ ├── app/
+ │    ├── page.tsx          → halaman login pemain
+ │    ├── play/page.tsx     → gameplay & animasi tarik tambang
+ │    └── admin/page.tsx    → admin panel
+ │
+ ├── utils/players.ts       → daftar pemain (nama & tim)
+ └── utils/data.ts          → sumber pertanyaan (opsional API)
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# tarik-tambang
+## 🌐 State & Persistensi
+
+Login pemain disimpan melalui:
+
+```
+sessionStorage.tt_session
+```
+
+Berisi:
+
+```json
+{
+  "name": "Nama Pemain",
+  "team": "red|blue",
+  "lastActivity": 1731056183929
+}
+```
+
+---
+
+## 🧪 Testing Cepat
+
+| Uji                  | Harus Berhasil                 |
+| -------------------- | ------------------------------ |
+| Nama tidak terdaftar | Tidak bisa masuk               |
+| Alias sesuai         | Bisa masuk sebagai nama utama  |
+| Berpindah device     | Tetap bisa selama sesi aktif   |
+| Jawab salah/benar    | Ada suara + animasi efek       |
+| Admin end session    | Semua pemain harus login ulang |
+
+---
+
+## 🏆 Kemenangan
+
+* Tim pertama yang mencapai **target poin**, atau
+* Poin tertinggi ketika **sesi selesai**
+
+> Kemenangan → mainkan **win.mp3** + animasi celebration
+
+---
+
+## ⚠️ Catatan Teknis
+
+| Hal                       | Status                     |
+| ------------------------- | -------------------------- |
+| Multiplayer Full Realtime | ✅ Poin & progress serentak |
+| Tanpa akun/password       | ✅ Anti ribet               |
+| Session-based             | ✅ Anti spam join           |
+| Anti cheat dasar          | ✅ Validasi nama whitelist  |
+
+---
+
+## 💡 Wishlist Next Update
+
+* Leaderboard historis
+* Animasi reaksi avatar
+* Efek getar HP saat poin masuk
+* Integrasi API pertanyaan
+* Custom nickname + avatar pilihan
+
+---
+
+## Catatan asset (taruh di public/)
+   * /boy.png (existing)
+   * /girl.png (existing)
+   * /sfx/point.wav — suara poin + spark
+   * /sfx/wrong.wav — suara salah (boop)
+   * /sfx/win.mp3 — suara kemenangan / fanfare
+Kalau belum punya sound, bisa pakai placeholder short mp3/wav (1s).
+Nama file harus sama seperti di atas.
