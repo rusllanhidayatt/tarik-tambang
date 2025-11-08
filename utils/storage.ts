@@ -5,6 +5,7 @@ export const STORAGE_KEY = 'tt_datasource_v2'
 export type Row = {
   id: string
   no: number
+  category?: string
   question: string
   answer: string
   timeSec: number
@@ -33,6 +34,7 @@ export async function loadData(): Promise<Row[]> {
     return questions.map(q => ({
       id: q.id,
       no: q.question_id,
+      category: q.category,
       question: q.question,
       answer: q.answer,
       timeSec: q.time_sec,
@@ -52,6 +54,7 @@ export async function saveData(arr: Row[]) {
       question: q.question,
       answer: q.answer,
       time_sec: q.timeSec,
+      category: q.category,
       keyword: q.keyword
     }))
     await saveQuestions(questions)

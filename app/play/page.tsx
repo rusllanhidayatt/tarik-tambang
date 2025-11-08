@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
+import { motion } from 'framer-motion'
 import { answerMatches, calcScore } from '../../utils/scoring'
 import { players } from '../../utils/players'
 import {
@@ -10,7 +11,6 @@ import {
   hasAnswered,
   subscribeToGameBroadcasts
 } from '../../lib/supabase-helpers'
-import { pollGameBroadcasts } from '../../lib/supabase-polling'
 
 const DEV_MODE = false
 
@@ -85,11 +85,11 @@ export default function Play() {
     init()
   }, [])
 
-  // ====== Handle broadcast via Polling (Realtime fallback) ======
+  // ====== Handle broadcast via Realtime ======
   useEffect(() => {
     if (!sessionId || !session) return
 
-    console.log('🔌 Using polling for game broadcasts (Realtime not available)')
+    console.log('🔌 Using Realtime for game broadcasts')
 
     const handleBroadcast = async (broadcast: any) => {
       // Update lastActivity
@@ -137,10 +137,12 @@ export default function Play() {
       }
     }
 
-    // Use polling instead of Realtime (since Realtime not available)
-    const cleanup = pollGameBroadcasts(sessionId, handleBroadcast, 1000)
+    // Use Realtime subscription
+    const channel = subscribeToGameBroadcasts(sessionId, handleBroadcast)
 
-    return cleanup
+    return () => {
+      channel.unsubscribe()
+    }
   }, [sessionId, session])
 
   useEffect(() => {
@@ -223,82 +225,140 @@ export default function Play() {
 
   if (isLoading) {
     return (
-      <div className="card text-center p-6">
-        <div className="text-xl font-semibold mb-2">Loading...</div>
-        <div className="small">Connecting to game...</div>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="card text-center max-w-md w-full">
+          <div className="text-6xl mb-4">⏳</div>
+          <div className="text-2xl font-bold text-white mb-2">Loading...</div>
+          <div className="text-slate-400">Connecting to game...</div>
+        </div>
       </div>
     )
   }
 
   if (expired && !DEV_MODE) {
     return (
-      <div className="card text-center p-6">
-        <div className="text-xl font-semibold mb-2">Sesi berakhir</div>
-        <div className="small mb-4">Sesi kamu telah kedaluwarsa setelah 1 jam tidak aktif.</div>
-        <a className="button" href="/">Login ulang</a>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="card text-center max-w-md w-full">
+          <div className="text-6xl mb-4">⏰</div>
+          <div className="text-2xl font-bold text-white mb-3">Sesi Berakhir</div>
+          <div className="text-slate-400 mb-6">
+            Sesi kamu telah kedaluwarsa setelah 1 jam tidak aktif.
+          </div>
+          <a className="button w-full" href="/">
+            🔄 Login Ulang
+          </a>
+        </div>
       </div>
     )
   }
 
+  const teamColor = session?.team === 'boy' ? 'blue' : 'pink'
+  const teamBg = session?.team === 'boy' ? 'from-blue-600 to-blue-700' : 'from-pink-600 to-pink-700'
+  const teamText = session?.team === 'boy' ? 'text-blue-400' : 'text-pink-400'
+
   return (
-    <div className="card">
-      <div className="flex justify-between items-center">
-        <div>
-          <div className="small"></div>
-          <div className="text-lg font-semibold">{session?.name}</div>
-          <div className="small">
-            Tim: <b>{session?.team}</b>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="card max-w-2xl w-full">
+        {/* Player Info Header */}
+        <div className="flex items-center justify-between mb-6 pb-6 border-b border-slate-700">
+          <div className="flex items-center gap-4">
+            <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${teamBg} flex items-center justify-center text-white text-2xl font-bold shadow-lg`}>
+              {session?.name?.[0]?.toUpperCase()}
+            </div>
+            <div>
+              <div className="text-xl font-bold text-white">{session?.name}</div>
+              <div className="text-sm text-slate-400">
+                Team: <span className={`font-semibold ${teamText}`}>
+                  {session?.team === 'boy' ? 'Ikhwan 👦' : 'Akhwat 👧'}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-xs text-slate-500 mb-1">Waktu Tersisa</div>
+            <div className={`text-4xl font-black tabular-nums transition-colors ${
+              timeLeft < 5 ? 'text-rose-500 pulse-glow' : timeLeft < 10 ? 'text-yellow-400' : 'text-emerald-400'
+            }`}>
+              {timeLeft}s
+            </div>
           </div>
         </div>
-        <div className="text-right">
-          <div className="small">Waktu tersisa</div>
-          <div className={`text-2xl font-bold ${timeLeft < 5 ? 'text-rose-500' : ''}`}>{timeLeft}s</div>
-        </div>
-      </div>
 
-      <div className="mt-6">
-        {current ? (
-          <>
-            <h3 className="text-xl font-semibold">{current.question}</h3>
-            {!hasAnsweredState && !allAnswered ? (
-              <div className="mt-3">
-                <input
-                  className="input"
-                  placeholder="Tulis jawaban... (kosong = salah)"
-                  value={answer}
-                  onChange={(e) => setAnswer(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && isActive) {
-                      submit()
-                    }
-                  }}
-                  disabled={!isActive}
-                  autoFocus
-                />
-                <div className="mt-3">
+        {/* Question Area */}
+        <div className="space-y-6">
+          {current ? (
+            <>
+              {/* Category Badge */}
+              {current.category && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/30 rounded-full"
+                >
+                  <span className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">
+                    📚 {current.category}
+                  </span>
+                </motion.div>
+              )}
+
+              <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700">
+                <h3 className="text-2xl font-bold text-white leading-relaxed">
+                  {current.question}
+                </h3>
+              </div>
+
+              {!hasAnsweredState && !allAnswered ? (
+                <div className="space-y-4">
+                  <input
+                    className="input text-lg"
+                    placeholder="Ketik jawaban kamu di sini..."
+                    value={answer}
+                    onChange={(e) => setAnswer(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && isActive) {
+                        submit()
+                      }
+                    }}
+                    disabled={!isActive}
+                    autoFocus
+                  />
+
                   <button
-                    className="button"
+                    className={`button w-full text-lg py-4 ${teamBg} bg-gradient-to-r`}
                     onClick={submit}
                     disabled={!isActive}
                   >
-                    Kirim Jawaban
+                    {isActive ? '📤 Kirim Jawaban' : '⏸️ Waktu Habis'}
                   </button>
+
                   {!answer.trim() && isActive && (
-                    <div className="mt-2 text-sm text-rose-400 font-semibold">
-                      ⚠️ <strong>Warning:</strong> Submit kosong = jawaban salah (dapat penalty!)
+                    <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 text-center">
+                      <div className="text-rose-400 font-semibold">
+                        ⚠️ Jawaban kosong akan dianggap SALAH dan mendapat penalty!
+                      </div>
                     </div>
                   )}
                 </div>
+              ) : (
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-6 text-center">
+                  <div className="text-5xl mb-3">✅</div>
+                  <div className="text-emerald-400 font-bold text-lg">
+                    {allAnswered
+                      ? 'Semua pertanyaan sudah dijawab!'
+                      : 'Jawaban terkirim! Tunggu pertanyaan berikutnya.'}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">🎯</div>
+              <div className="text-slate-400 text-lg">
+                Menunggu operator memulai soal...
               </div>
-            ) : (
-              <div className="mt-4 text-green-400 font-semibold">
-                ✅ {allAnswered ? 'Semua pertanyaan sudah dijawab.' : 'Jawaban terkirim! Tunggu pertanyaan berikutnya.'}
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="small">Menunggu operator memulai soal...</div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

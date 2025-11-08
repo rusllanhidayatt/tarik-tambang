@@ -16,7 +16,6 @@ import {
   getTeamScores,
   clearAllGameData
 } from '../../lib/supabase-helpers'
-import { pollPlayerAnswers, pollTeamScores } from '../../lib/supabase-polling'
 
 export default function Admin() {
   const [rows, setRows] = useState<any[]>([])
@@ -30,8 +29,54 @@ export default function Admin() {
   const [recentAnswers, setRecentAnswers] = useState<any[]>([]) // {id,name,alias,correct,delta,team,ts}
   const [sessionId, setSessionId] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
+  const [motivationMsg, setMotivationMsg] = useState<string>('')
+  const [showMotivation, setShowMotivation] = useState(false)
+  const [gameEnded, setGameEnded] = useState(false)
+  const [showVictoryModal, setShowVictoryModal] = useState(false)
   const sfxRef = useRef({ point: null as HTMLAudioElement | null, wrong: null as HTMLAudioElement | null, win: null as HTMLAudioElement | null })
   const isRestoringRef = useRef(false) // Track if we're restoring from saved state
+
+  // Fun motivational messages
+  const motivationalMessages = {
+    boy: [
+      "💪 Ikhwan lagi on fire!",
+      "🔥 Mantap Ikhwan!",
+      "⚡ Speed run Ikhwan!",
+      "🎯 Fokus Ikhwan!",
+      "💯 Perfect Ikhwan!",
+      "🚀 Ikhwan unstoppable!",
+      "⭐ Brilliant Ikhwan!",
+      "🌟 Ikhwan dominating!"
+    ],
+    girl: [
+      "✨ Akhwat luar biasa!",
+      "💫 Keren Akhwat!",
+      "🌸 Akhwat on point!",
+      "🎀 Amazing Akhwat!",
+      "💝 Perfect Akhwat!",
+      "🦋 Akhwat unstoppable!",
+      "⭐ Brilliant Akhwat!",
+      "🌺 Akhwat crushing it!"
+    ],
+    tie: [
+      "🤝 Neck and neck!",
+      "⚔️ Battle continues!",
+      "🔥 It's heating up!",
+      "💥 Close competition!",
+      "⚡ What a match!",
+      "🎯 Still anyone's game!",
+      "🌟 Epic showdown!"
+    ]
+  }
+
+  // Show motivation message
+  const showMotivationMessage = (team: 'boy' | 'girl' | 'tie') => {
+    const messages = motivationalMessages[team]
+    const msg = messages[Math.floor(Math.random() * messages.length)]
+    setMotivationMsg(msg)
+    setShowMotivation(true)
+    setTimeout(() => setShowMotivation(false), 2500)
+  }
 
   // Initialize session and load data
   useEffect(() => {
@@ -123,8 +168,9 @@ export default function Admin() {
           totalQuestions: rows.length,
         })
 
+        setGameEnded(true)
         setShowConfetti(true)
-        alert('🎉 Semua soal sudah selesai!\nGame berakhir ✅')
+        setShowVictoryModal(true)
         sfxRef.current.win?.play().catch(() => {})
       } catch (error) {
         console.error('Error ending game:', error)
@@ -148,11 +194,11 @@ export default function Admin() {
     }
   }, [index])
 
-  // Subscribe to player answers (using polling - Realtime not available)
+  // Subscribe to player answers (using Realtime)
   useEffect(() => {
     if (!sessionId) return
 
-    console.log('🔌 Using polling for player answers (Realtime not available)')
+    console.log('🔌 Using Realtime for player answers')
 
     const handleAnswer = (answer: any) => {
       const side = answer.team === 'boy' ? 'left' : 'right'
@@ -183,33 +229,63 @@ export default function Admin() {
 
       setRecentAnswers(prev => [rec, ...prev].slice(0, 12))
 
-      // Add sparkle effect
-      const sparkle = { id: Date.now(), side, text: `${delta >= 0 ? '+' : ''}${delta}` }
+      // Add sparkle effect with fun reactions
+      const reactions = answer.is_correct
+        ? ['🔥', '⚡', '💯', '✨', '🌟', '💪', '🎯', '👏', '🚀', '💥']
+        : ['😅', '💔', '😢', '😭']
+      const randomReaction = reactions[Math.floor(Math.random() * reactions.length)]
+
+      const sparkle = {
+        id: Date.now(),
+        side,
+        text: `${randomReaction} ${delta >= 0 ? '+' : ''}${delta}`,
+        isCorrect: answer.is_correct
+      }
       setSparkles(prev => [...prev, sparkle])
-      setTimeout(() => setSparkles(prev => prev.filter(s => s.id !== sparkle.id)), 1300)
+      setTimeout(() => setSparkles(prev => prev.filter(s => s.id !== sparkle.id)), 1800)
     }
 
-    // Use polling instead of Realtime
-    const cleanup = pollPlayerAnswers(sessionId, handleAnswer, 1000)
+    // Use Realtime subscription
+    const channel = subscribeToPlayerAnswers(sessionId, handleAnswer)
 
-    return cleanup
+    return () => {
+      channel.unsubscribe()
+    }
   }, [sessionId])
 
-  // Subscribe to team scores (using polling)
+  // Subscribe to team scores (using Realtime)
   useEffect(() => {
     if (!sessionId) return
 
-    console.log('🔌 Using polling for team scores (Realtime not available)')
+    console.log('🔌 Using Realtime for team scores')
 
-    const handleScores = (newScores: { boy: number; girl: number }) => {
+    const handleScoreUpdate = async (payload: any) => {
+      // Fetch all team scores to get both teams
+      const teamScores = await getTeamScores(sessionId)
+      const newScores = { boy: teamScores.boy, girl: teamScores.girl }
+
+      const oldScores = scores
       setScores({ left: newScores.boy, right: newScores.girl })
+
+      // Show motivation message on score change
+      if (newScores.boy > oldScores.left || newScores.girl > oldScores.right) {
+        if (newScores.boy > newScores.girl) {
+          showMotivationMessage('boy')
+        } else if (newScores.girl > newScores.boy) {
+          showMotivationMessage('girl')
+        } else {
+          showMotivationMessage('tie')
+        }
+      }
     }
 
-    // Use polling instead of Realtime
-    const cleanup = pollTeamScores(sessionId, handleScores, 2000)
+    // Use Realtime subscription
+    const channel = subscribeToTeamScores(sessionId, handleScoreUpdate)
 
-    return cleanup
-  }, [sessionId])
+    return () => {
+      channel.unsubscribe()
+    }
+  }, [sessionId, scores])
 
   async function showCorrectAuto() {
     const q = rows[index]
@@ -261,55 +337,117 @@ export default function Admin() {
   }
 
   return (
-    <div className="relative p-6 fade-in min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 md:p-6 fade-in">
       {showConfetti && <Confetti />}
 
-      {/* Session Info */}
-      <div className="absolute top-2 right-4 text-xs text-slate-500">
-        Session: {sessionId.slice(-8)}
+      {/* Header Bar */}
+      <div className="flex items-center justify-between mb-6 px-4">
+        <h1 className="text-2xl font-bold text-white">🎮 Admin Panel</h1>
+        <div className="px-3 py-1.5 rounded-lg bg-slate-700/50 border border-slate-600 text-xs text-slate-300">
+          Session: <span className="font-mono text-sky-400">{sessionId.slice(-8)}</span>
+        </div>
       </div>
 
-      {/* SCOREBOARD big */}
-      <div className="flex justify-between items-center mb-6 gap-6">
-        <div className="flex-1 flex flex-col items-center">
-          <div className={`text-6xl font-extrabold drop-shadow-lg transition-all duration-300 ${
-            leader === 'boy' ? 'text-blue-500 scale-110' : 'text-blue-300'
-          }`}>
-            👦 <motion.span key={scores.left} initial={{ scale: 1.4 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>{scores.left}</motion.span>
-          </div>
-          <div className="mt-2 text-slate-400 text-sm">Ikhwan</div>
-        </div>
-
-        <div className="w-1/3 text-center">
-          <div className="text-3xl font-black text-slate-400">VS</div>
-          {index >= 0 && countdownTimer > 0 && (
-            <div className={`text-3xl font-extrabold mt-2 transition-colors duration-200 ${
-              countdownTimer <= 5 ? 'text-red-500' : 'text-yellow-400'
+      {/* Scoreboard */}
+      <div className="card mb-6">
+        <div className="grid grid-cols-3 gap-6 items-center">
+          {/* Boy/Ikhwan Score */}
+          <div className="flex flex-col items-center space-y-3">
+            <div className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Ikhwan</div>
+            <div className={`text-7xl font-black transition-all duration-300 ${
+              leader === 'boy' ? 'text-blue-500 scale-110' : 'text-blue-400/60'
             }`}>
-              ⏱ {countdownTimer}s
+              <motion.span
+                key={scores.left}
+                initial={{ scale: 1.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              >
+                {scores.left}
+              </motion.span>
             </div>
-          )}
-        </div>
-
-        <div className="flex-1 flex flex-col items-center">
-          <div className={`text-6xl font-extrabold drop-shadow-lg transition-all duration-300 ${
-            leader === 'girl' ? 'text-pink-500 scale-110' : 'text-pink-300'
-          }`}>
-            👧 <motion.span key={scores.right} initial={{ scale: 1.4 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>{scores.right}</motion.span>
+            <div className="text-xs text-slate-500">Points</div>
           </div>
-          <div className="mt-2 text-slate-400 text-sm">Akhwat</div>
+
+          {/* VS & Timer */}
+          <div className="flex flex-col items-center space-y-3">
+            <div className="text-4xl font-black text-slate-600">VS</div>
+            {index >= 0 && countdownTimer > 0 && (
+              <div className={`text-3xl font-black tabular-nums transition-colors duration-200 ${
+                countdownTimer <= 5 ? 'text-red-500 pulse-glow' : 'text-yellow-400'
+              }`}>
+                {countdownTimer}s
+              </div>
+            )}
+            {index >= 0 && (
+              <div className="text-xs text-slate-500">
+                Question {index + 1} / {rows.length}
+              </div>
+            )}
+          </div>
+
+          {/* Girl/Akhwat Score */}
+          <div className="flex flex-col items-center space-y-3">
+            <div className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Akhwat</div>
+            <div className={`text-7xl font-black transition-all duration-300 ${
+              leader === 'girl' ? 'text-pink-500 scale-110' : 'text-pink-400/60'
+            }`}>
+              <motion.span
+                key={scores.right}
+                initial={{ scale: 1.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              >
+                {scores.right}
+              </motion.span>
+            </div>
+            <div className="text-xs text-slate-500">Points</div>
+          </div>
         </div>
       </div>
+
+      {/* Motivational Message */}
+      <AnimatePresence>
+        {showMotivation && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: -20 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            className="flex justify-center mb-4"
+          >
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-8 py-4 rounded-2xl shadow-2xl border-2 border-amber-300">
+              <div className="text-2xl font-black text-center">
+                {motivationMsg}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Controls */}
-      <div className="flex justify-center gap-4 mb-6">
+      <div className="flex justify-center items-center gap-3 mb-6 flex-wrap">
+        {index === -1 ? (
+          <button className="button bg-emerald-600 hover:bg-emerald-700 text-lg px-8 py-3" onClick={start}>
+            🚀 Start Game
+          </button>
+        ) : (
+          <>
+            <button className="button bg-sky-600 hover:bg-sky-700" onClick={next}>
+              ⏭ Next Question
+            </button>
+            <button className="button bg-emerald-600 hover:bg-emerald-700" onClick={() => { showCorrectAuto() }}>
+              ✅ Show Answer
+            </button>
+          </>
+        )}
+
         <button
-          className="button bg-red-600 hover:bg-red-700"
+          className="button bg-rose-600 hover:bg-rose-700"
           onClick={async () => {
-            if (!confirm('Reset semua data game?')) return
+            if (!confirm('Reset semua data game? Ini akan menghapus semua progress!')) return
             try {
               await clearAllGameData(sessionId)
-              // Clear localStorage & sessionStorage
               Object.keys(localStorage).forEach(k => k.startsWith('tt_') && localStorage.removeItem(k))
               Object.keys(sessionStorage).forEach(k => k.startsWith('tt_') && sessionStorage.removeItem(k))
               alert('✅ Reset berhasil!')
@@ -322,15 +460,9 @@ export default function Admin() {
               alert('Error resetting game. Check console.')
             }
           }}
-        >♻ Reset</button>
-
-        {index === -1 ? (
-          <button className="button" onClick={start}>🚀 Start</button>
-        ) : (
-          <button className="button" onClick={next}>⏭ Next</button>
-        )}
-
-        <button className="button" onClick={() => { showCorrectAuto() }}>✅ Show Correct</button>
+        >
+          🔄 Reset Game
+        </button>
       </div>
 
       {/* Main area: board + recent answers */}
@@ -340,51 +472,61 @@ export default function Admin() {
         </div>
 
         <div className="col-span-1">
-          <div className="card p-4 sticky top-6">
-            <h4 className="text-lg font-bold mb-2">Recent Answers</h4>
-            <div className="space-y-2 max-h-[52vh] overflow-auto">
-              {recentAnswers.length === 0 && <div className="text-slate-400 text-sm">Belum ada jawaban</div>}
+          <div className="card sticky top-6">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-lg font-bold text-white">📊 Recent Answers</h4>
+              <div className="text-xs text-slate-500">{recentAnswers.length} answers</div>
+            </div>
+
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+              {recentAnswers.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="text-slate-600 text-5xl mb-3">📝</div>
+                  <div className="text-slate-400 text-sm">Belum ada jawaban</div>
+                </div>
+              )}
+
               <AnimatePresence mode="popLayout">
                 {recentAnswers.map(r => (
                   <motion.div
                     key={r.id}
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex flex-col gap-2 p-3 rounded-lg bg-slate-50/50 border-l-4"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20, height: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="p-3 rounded-xl bg-slate-800/50 border-l-4 hover:bg-slate-700/50 transition-colors"
                     style={{
                       borderLeftColor: r.team === 'boy' ? '#3b82f6' : '#ec4899'
                     }}
                   >
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${
-                          r.team === 'boy' ? 'bg-blue-500' : 'bg-pink-500'
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg ${
+                          r.team === 'boy' ? 'bg-gradient-to-br from-blue-500 to-blue-600' : 'bg-gradient-to-br from-pink-500 to-pink-600'
                         }`}>
                           {r.alias?.[0]?.toUpperCase() || r.name?.[0]}
                         </div>
-                        <div>
-                          <div className="font-semibold text-sm">{r.alias}</div>
-                          <div className="text-xs text-slate-400">{r.name}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-sm text-white truncate">{r.alias}</div>
+                          <div className="text-xs text-slate-400 truncate">{r.name}</div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className={`font-bold ${
-                          r.correct ? 'text-green-500' : 'text-rose-500'
+                      <div className="text-right flex-shrink-0">
+                        <div className={`font-black text-lg ${
+                          r.correct ? 'text-emerald-400' : 'text-rose-400'
                         }`}>
                           {r.correct ? `+${r.delta}` : r.delta}
                         </div>
-                        <div className="text-xs text-slate-400">
-                          {new Date(r.ts).toLocaleTimeString()}
+                        <div className="text-xs text-slate-500 font-mono">
+                          {new Date(r.ts).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                         </div>
                       </div>
                     </div>
                     {r.answerText && (
-                      <div className="text-xs pl-11">
+                      <div className="mt-2 pl-13 text-xs">
                         <span className="text-slate-500">Jawaban: </span>
-                        <span className={`font-medium ${
-                          r.correct ? 'text-green-600' : 'text-rose-600'
+                        <span className={`font-semibold ${
+                          r.correct ? 'text-emerald-400' : 'text-rose-400'
                         }`}>
                           {r.answerText}
                         </span>
@@ -394,40 +536,210 @@ export default function Admin() {
                 ))}
               </AnimatePresence>
             </div>
-            <div className="mt-4 text-xs text-slate-500">Salah akan mengurangi poin (penalty).</div>
+
+            <div className="mt-4 pt-4 border-t border-slate-700 text-xs text-slate-500 text-center">
+              ⚠️ Jawaban salah akan mengurangi poin (penalty)
+            </div>
           </div>
         </div>
       </div>
 
-      {/* sparkles */}
+      {/* sparkles with reactions */}
       <AnimatePresence>
         {sparkles.map(s => (
           <motion.div
             key={s.id}
-            initial={{ opacity: 0, y: 0, scale: 0.8 }}
-            animate={{ opacity: [0, 1, 0], y: -100, scale: 1.2 }}
+            initial={{ opacity: 0, y: 0, scale: 0.5, rotate: -20 }}
+            animate={{
+              opacity: [0, 1, 1, 0],
+              y: -120,
+              scale: [0.5, 1.3, 1.2, 1],
+              rotate: [- 20, 10, -5, 0]
+            }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 1, ease: 'easeOut' }}
-            className={`absolute text-4xl font-black ${
+            transition={{ duration: 1.5, ease: 'easeOut' }}
+            className={`absolute text-5xl font-black drop-shadow-2xl ${
               s.side === 'left'
-                ? 'left-[22%] text-blue-500'
-                : 'right-[22%] text-pink-500'
-            }`}
+                ? 'left-[22%]'
+                : 'right-[22%]'
+            } ${s.isCorrect ? 'text-emerald-400' : 'text-rose-400'}`}
+            style={{
+              textShadow: s.isCorrect
+                ? '0 0 20px rgba(16, 185, 129, 0.8), 0 0 40px rgba(16, 185, 129, 0.4)'
+                : '0 0 20px rgba(239, 68, 68, 0.8), 0 0 40px rgba(239, 68, 68, 0.4)'
+            }}
           >
             {s.text}
           </motion.div>
         ))}
       </AnimatePresence>
 
-      {/* Modal correct */}
+      {/* Modal correct answer */}
       <AnimatePresence>
         {showModal && (
-          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={()=>setShowModal(false)}>
-            <motion.div initial={{scale:0.95, opacity:0}} animate={{scale:1, opacity:1}} exit={{scale:0.95, opacity:0}} transition={{duration:0.2}} className="bg-white rounded-3xl p-8 max-w-md w-full text-center" onClick={(e)=>e.stopPropagation()}>
-              <h3 className="text-2xl font-black mb-3">Jawaban Benar</h3>
-              <div className="text-green-600 text-xl font-bold">✅ {correctAnswer}</div>
-              <div className="mt-3 text-sm text-slate-500">Tekan ESC / klik luar untuk tutup</div>
-              <button className="button w-full mt-6" onClick={next}>⏭ Next Question</button>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 max-w-lg w-full border border-slate-700 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center">
+                <div className="text-6xl mb-4">✅</div>
+                <h3 className="text-2xl font-black text-white mb-3">Jawaban Benar</h3>
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-6 mb-6">
+                  <div className="text-emerald-400 text-2xl font-bold">{correctAnswer}</div>
+                </div>
+                <div className="text-sm text-slate-400 mb-6">
+                  Tekan <kbd className="px-2 py-1 bg-slate-700 rounded text-xs font-mono">ESC</kbd> atau klik luar untuk tutup
+                </div>
+                <button className="button w-full bg-sky-600 hover:bg-sky-700 text-lg py-3" onClick={next}>
+                  ⏭ Next Question
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Victory Modal - Game End */}
+      <AnimatePresence>
+        {showVictoryModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0, rotate: -10 }}
+              animate={{ scale: 1, opacity: 1, rotate: 0 }}
+              exit={{ scale: 0.5, opacity: 0, rotate: 10 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+              className="bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 rounded-3xl p-12 max-w-2xl w-full border-4 border-yellow-400 shadow-2xl relative overflow-hidden"
+            >
+              {/* Sparkles background */}
+              <div className="absolute inset-0 opacity-20">
+                {[...Array(20)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute text-yellow-400 text-4xl"
+                    style={{
+                      left: `${Math.random() * 100}%`,
+                      top: `${Math.random() * 100}%`,
+                    }}
+                    animate={{
+                      scale: [1, 1.5, 1],
+                      opacity: [0.3, 1, 0.3],
+                      rotate: [0, 180, 360],
+                    }}
+                    transition={{
+                      duration: 2 + Math.random() * 2,
+                      repeat: Infinity,
+                      delay: Math.random() * 2,
+                    }}
+                  >
+                    ⭐
+                  </motion.div>
+                ))}
+              </div>
+
+              <div className="relative z-10 text-center">
+                {/* Trophy */}
+                <motion.div
+                  className="text-9xl mb-6"
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    rotate: [0, 10, -10, 0],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                >
+                  🏆
+                </motion.div>
+
+                <h2 className="text-5xl font-black text-yellow-400 mb-4 drop-shadow-2xl">
+                  GAME OVER!
+                </h2>
+
+                {/* Winner Announcement */}
+                <div className="mb-8">
+                  {scores.left > scores.right ? (
+                    <div className="bg-blue-500/20 border-4 border-blue-400 rounded-2xl p-6">
+                      <div className="text-6xl mb-2">👦</div>
+                      <div className="text-3xl font-black text-blue-400">IKHWAN MENANG!</div>
+                      <div className="text-6xl font-black text-white mt-2">{scores.left} pts</div>
+                    </div>
+                  ) : scores.right > scores.left ? (
+                    <div className="bg-pink-500/20 border-4 border-pink-400 rounded-2xl p-6">
+                      <div className="text-6xl mb-2">👧</div>
+                      <div className="text-3xl font-black text-pink-400">AKHWAT MENANG!</div>
+                      <div className="text-6xl font-black text-white mt-2">{scores.right} pts</div>
+                    </div>
+                  ) : (
+                    <div className="bg-purple-500/20 border-4 border-purple-400 rounded-2xl p-6">
+                      <div className="text-6xl mb-2">🤝</div>
+                      <div className="text-3xl font-black text-purple-400">SERI!</div>
+                      <div className="text-4xl font-black text-white mt-2">{scores.left} - {scores.right}</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-white/10 rounded-xl p-4">
+                    <div className="text-blue-400 text-4xl font-black">{scores.left}</div>
+                    <div className="text-sm text-slate-300 mt-1">Ikhwan</div>
+                  </div>
+                  <div className="bg-white/10 rounded-xl p-4">
+                    <div className="text-pink-400 text-4xl font-black">{scores.right}</div>
+                    <div className="text-sm text-slate-300 mt-1">Akhwat</div>
+                  </div>
+                </div>
+
+                <div className="text-slate-300 text-lg mb-6">
+                  Total {rows.length} Pertanyaan Selesai! 🎉
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    className="button flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-lg py-4"
+                    onClick={async () => {
+                      if (!confirm('Mulai game baru?')) return
+                      try {
+                        await clearAllGameData(sessionId)
+                        setIndex(-1)
+                        setScores({ left: 0, right: 0 })
+                        setShowConfetti(false)
+                        setShowVictoryModal(false)
+                        setGameEnded(false)
+                        setRecentAnswers([])
+                      } catch (error) {
+                        console.error('Error resetting:', error)
+                      }
+                    }}
+                  >
+                    🔄 Main Lagi
+                  </button>
+                  <button
+                    className="button flex-1 bg-gradient-to-r from-slate-600 to-slate-700 text-lg py-4"
+                    onClick={() => setShowVictoryModal(false)}
+                  >
+                    ✅ Tutup
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}

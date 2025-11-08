@@ -50,30 +50,55 @@ export default function Page() {
   }
 
   return (
-    <div className="card">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Tarik Tambang — Join</h1>
-        <div className="small"></div>
-      </div>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="card max-w-md w-full">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="text-6xl mb-4">🪢</div>
+          <h1 className="text-3xl font-black text-white mb-2">Tarik Tambang</h1>
+          <div className="text-slate-400">Join the game</div>
+        </div>
 
-      <div className="mt-6 grid gap-4">
-        <input
-          className="input"
-          placeholder="Nama panggilan atau lengkap kamu"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') join()
-          }}
-        />
+        {/* Form */}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-300 mb-2">
+              Nama Kamu
+            </label>
+            <input
+              className="input text-lg"
+              placeholder="Masukkan nama panggilan atau lengkap"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !isChecking) join()
+              }}
+              disabled={isChecking}
+              autoFocus
+            />
+          </div>
 
-        <button className="button" onClick={join} disabled={isChecking}>
-          {isChecking ? 'Checking...' : 'Join Game'}
-        </button>
-      </div>
+          <button
+            className="button w-full text-lg py-4 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700"
+            onClick={join}
+            disabled={isChecking}
+          >
+            {isChecking ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="animate-spin">⏳</span> Checking...
+              </span>
+            ) : (
+              '🎮 Join Game'
+            )}
+          </button>
+        </div>
 
-      <div className="mt-6 small text-slate-400">
-        Nama harus sesuai dengan list sembako jika tidak valid.
+        {/* Info */}
+        <div className="mt-6 bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+          <div className="text-xs text-slate-400 text-center">
+            ℹ️ Nama harus sesuai dengan list yang terdaftar
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -95,6 +95,7 @@ export async function saveQuestions(questions: Array<{
   question: string
   answer: string
   time_sec: number
+  category?: string
   keyword?: string
 }>) {
   // Clear existing questions

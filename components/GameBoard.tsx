@@ -11,15 +11,20 @@ export default function GameBoard({ question, scores }: any) {
 
   useEffect(() => {
     setShakeKey(k => k + 1)
-    const total = (scores.left + scores.right) || 1
-    setOffset(((scores.right - scores.left) / total) * 40) // offset % -40..40
+    // Offset berdasarkan selisih score saja: 2% per poin
+    // Positif = Akhwat (right) unggul, Negatif = Ikhwan (left) unggul
+    setOffset((scores.right - scores.left) * 2) // 2% per point difference
   }, [scores])
 
   if (!question) {
     return (
-      <div className="card text-center mt-6 py-24 opacity-70">
+      <div className="card text-center py-32">
+        <div className="text-slate-600 text-6xl mb-4">🎯</div>
         <div className="text-slate-400 text-xl font-semibold">
           Menunggu pertanyaan...
+        </div>
+        <div className="text-slate-500 text-sm mt-2">
+          Klik "Start Game" untuk memulai
         </div>
       </div>
     )
@@ -29,31 +34,37 @@ export default function GameBoard({ question, scores }: any) {
   const highEnergy = Math.abs(lead) > 6
 
   return (
-    <div className="card text-center mt-6 relative pb-10 overflow-hidden">
-      <AnimatePresence mode="wait">
-        <motion.h3
-          key={question.question}
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.35 }}
-          className="text-3xl font-bold mb-6 drop-shadow-md"
-        >
-          {question.question}
-        </motion.h3>
-      </AnimatePresence>
+    <div className="card relative overflow-hidden">
+      {/* Question Header */}
+      <div className="text-center mb-8">
+        {/* Category Badge */}
+        {question.category && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/30 rounded-full mb-4"
+          >
+            <span className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">
+              📚 {question.category}
+            </span>
+          </motion.div>
+        )}
 
-      <motion.div
-        animate={{
-          x: highEnergy && Math.abs(offset) > 10 ? [-1, 1, -1, 1, 0] : 0,
-          y: highEnergy && Math.abs(offset) > 10 ? [0, -1, 1, -1, 0] : 0
-        }}
-        transition={{
-          repeat: highEnergy && Math.abs(offset) > 10 ? Infinity : 0,
-          duration: 0.15
-        }}
-        className="relative h-64 mt-12 flex justify-center items-center"
-      >
+        <AnimatePresence mode="wait">
+          <motion.h3
+            key={question.question}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.35 }}
+            className="text-3xl font-bold text-white drop-shadow-lg leading-tight"
+          >
+            {question.question}
+          </motion.h3>
+        </AnimatePresence>
+      </div>
+
+      <div className="relative h-64 mt-12 flex justify-center items-center">
         {/* center guideline with pulsing indicator */}
         <motion.div
           animate={{
@@ -69,147 +80,56 @@ export default function GameBoard({ question, scores }: any) {
           className="absolute w-full h-1 top-1/2 -translate-y-1/2"
         />
 
-        {/* Ground dust particles when highEnergy */}
-        <AnimatePresence>
-          {highEnergy && (
-            <>
-              <motion.div
-                initial={{ opacity: 0, x: '-50%' }}
-                animate={{
-                  opacity: [0, 0.4, 0],
-                  y: [0, -20, -40],
-                  x: ['-50%', '-55%', '-60%'],
-                  scale: [0.5, 1, 1.5]
-                }}
-                exit={{ opacity: 0 }}
-                transition={{ repeat: Infinity, duration: 1.5 }}
-                className="absolute bottom-0 left-[15%] w-16 h-16 rounded-full bg-slate-400/20 blur-md"
-              />
-              <motion.div
-                initial={{ opacity: 0, x: '50%' }}
-                animate={{
-                  opacity: [0, 0.4, 0],
-                  y: [0, -20, -40],
-                  x: ['50%', '55%', '60%'],
-                  scale: [0.5, 1, 1.5]
-                }}
-                exit={{ opacity: 0 }}
-                transition={{ repeat: Infinity, duration: 1.5, delay: 0.3 }}
-                className="absolute bottom-0 right-[15%] w-16 h-16 rounded-full bg-slate-400/20 blur-md"
-              />
-            </>
-          )}
-        </AnimatePresence>
 
-        {/* Rope container with tension waves */}
+        {/* Rope container - Realistic tug of war rope */}
         <motion.div
           key={shakeKey}
-          className="absolute w-[70%] max-w-[900px] h-[20px] rounded-full shadow-2xl overflow-hidden"
+          className="absolute w-[70%] max-w-[900px] h-[18px] rounded-sm shadow-2xl overflow-hidden"
           animate={{
             x: `${offset}%`,
-            scaleX: highEnergy ? [1, 1.05, 0.98, 1.02, 1] : 1,
-            scaleY: highEnergy ? [1, 0.9, 1.1, 0.95, 1] : 1,
-            rotateZ: offset !== 0 ? [0, offset > 0 ? 2 : -2, 0] : 0
           }}
           transition={{
-            x: { type: 'spring', stiffness: 180, damping: 18, mass: 1 },
-            scaleX: { repeat: highEnergy ? Infinity : 0, duration: 0.25, ease: 'easeInOut' },
-            scaleY: { repeat: highEnergy ? Infinity : 0, duration: 0.25, ease: 'easeInOut' },
-            rotateZ: { repeat: Infinity, duration: 0.4, ease: 'easeInOut' }
+            type: 'spring',
+            stiffness: 200,
+            damping: 20,
+            mass: 0.5
           }}
           style={{
-            border: '4px solid rgba(0,0,0,0.6)',
-            background: '#111',
-            filter: highEnergy ? 'drop-shadow(0 0 8px rgba(255,215,0,0.3))' : 'none'
+            border: '3px solid #8B4513',
+            background: 'linear-gradient(180deg, #CD853F 0%, #8B4513 50%, #654321 100%)',
+            borderRadius: '2px'
           }}
         >
-          {/* gradient moving inside rope with energy pulses */}
-          <motion.div
-            className="w-full h-full relative"
-            animate={{
-              background: offset > 6
-                ? ["linear-gradient(90deg,#ff8fb1,#ffd36b,#ff6b9d)","linear-gradient(90deg,#ffd36b,#ff6b9d,#ff8fb1)"]
-                : offset < -6
-                ? ["linear-gradient(90deg,#7db7ff,#ffe36b,#60a5fa)","linear-gradient(90deg,#ffe36b,#60a5fa,#7db7ff)"]
-                : ["linear-gradient(90deg,#7db7ff,#ffd36b,#ff8fb1)","linear-gradient(90deg,#ff8fb1,#7db7ff,#ffd36b)"],
-              x: ['-100%', '100%']
-            }}
-            transition={{
-              background: { duration: 1.5, repeat: Infinity, ease: 'linear' },
-              x: { duration: highEnergy ? 0.8 : 2, repeat: Infinity, ease: 'linear' }
-            }}
-            style={{ minWidth: '300%' }}
-          >
-            {/* Energy flash when high energy */}
-            {highEnergy && (
-              <motion.div
-                animate={{
-                  opacity: [0, 0.8, 0],
-                  scaleX: [0.5, 1.5, 0.5]
+          {/* Rope texture - stripes pattern */}
+          <div className="w-full h-full relative opacity-30">
+            {[...Array(12)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute h-full bg-black/20"
+                style={{
+                  left: `${i * 8.33}%`,
+                  width: '2px'
                 }}
-                transition={{ repeat: Infinity, duration: 0.6 }}
-                className="absolute inset-0 bg-white/30"
               />
-            )}
-          </motion.div>
+            ))}
+          </div>
+
+          {/* Center marker - red ribbon */}
+          <motion.div
+            className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-full"
+            style={{
+              background: 'linear-gradient(90deg, transparent, #dc2626, transparent)',
+              boxShadow: '0 0 10px rgba(220, 38, 38, 0.5)'
+            }}
+          />
         </motion.div>
 
-        {/* Enhanced sparks / energy field when high energy */}
-        <AnimatePresence>
-          {highEnergy && (
-            <>
-              {/* Main glow aura */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{
-                  opacity: [0.3, 0.7, 0.3],
-                  scale: [0.9, 1.1, 0.9],
-                  y: offset > 0 ? [-5, 5, -5] : [5, -5, 5]
-                }}
-                exit={{ opacity: 0 }}
-                transition={{
-                  opacity: { repeat: Infinity, duration: 0.8 },
-                  scale: { repeat: Infinity, duration: 1.2 },
-                  y: { repeat: Infinity, duration: 0.6 }
-                }}
-                className={`absolute top-1/2 -translate-y-1/2 w-[50%] h-24 pointer-events-none blur-xl ${
-                  offset > 0 ? 'bg-pink-400/40' : 'bg-blue-400/40'
-                }`}
-                style={{ left: offset > 0 ? '15%' : '35%' }}
-              />
-
-              {/* Sparkling particles */}
-              {[...Array(3)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{
-                    opacity: [0, 1, 0],
-                    scale: [0, 1.5, 0],
-                    x: offset > 0 ? [0, -10, -20] : [0, 10, 20],
-                    y: [0, -15, -30]
-                  }}
-                  exit={{ opacity: 0 }}
-                  transition={{
-                    repeat: Infinity,
-                    duration: 1.2,
-                    delay: i * 0.3
-                  }}
-                  className={`absolute top-1/2 w-2 h-2 rounded-full ${
-                    offset > 0 ? 'bg-pink-300' : 'bg-blue-300'
-                  }`}
-                  style={{ left: offset > 0 ? '40%' : '60%' }}
-                />
-              ))}
-            </>
-          )}
-        </AnimatePresence>
 
         {/* Boy avatar */}
         <motion.div
           animate={{
-            x: offset > 0 ? -offset / 2.3 : 0,
-            rotate: offset > 10 ? -12 : offset > 5 ? -6 : offset < -5 ? 4 : 0,
+            x: offset / 2.3,
+            rotate: offset > 10 ? 12 : offset > 5 ? 6 : offset < -10 ? -12 : offset < -5 ? -6 : 0,
           }}
           transition={{
             x: { type: 'spring', stiffness: 140, damping: 14 },
@@ -270,8 +190,8 @@ export default function GameBoard({ question, scores }: any) {
         {/* Girl avatar */}
         <motion.div
           animate={{
-            x: offset < 0 ? -offset / 2.3 : 0,
-            rotate: offset < -10 ? 12 : offset < -5 ? 6 : offset > 5 ? -4 : 0,
+            x: offset / 2.3,
+            rotate: offset > 10 ? 12 : offset > 5 ? 6 : offset < -10 ? -12 : offset < -5 ? -6 : 0,
           }}
           transition={{
             x: { type: 'spring', stiffness: 140, damping: 14 },
@@ -328,7 +248,7 @@ export default function GameBoard({ question, scores }: any) {
             />
           )}
         </motion.div>
-      </motion.div>
+      </div>
     </div>
   )
 }

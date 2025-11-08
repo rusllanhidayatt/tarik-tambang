@@ -2,59 +2,65 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 🌌 Style global tambahan */
+/* ==================== Theme Variables ==================== */
 :root {
-  --glass: rgba(255, 255, 255, 0.04);
+  /* Team Colors */
+  --color-boy: #3b82f6;
+  --color-boy-light: #60a5fa;
+  --color-boy-dark: #2563eb;
+
+  --color-girl: #ec4899;
+  --color-girl-light: #f472b6;
+  --color-girl-dark: #db2777;
+
+  /* UI Colors */
+  --color-success: #10b981;
+  --color-error: #ef4444;
+  --color-warning: #f59e0b;
+
+  /* Glass effect */
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
 }
 
-/* Body base style */
+/* ==================== Base Styles ==================== */
 body {
-  @apply bg-slate-900 text-slate-100 antialiased selection:bg-sky-500 selection:text-white;
+  @apply bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-100 antialiased
+  selection:bg-sky-500 selection:text-white min-h-screen;
 }
 
-/* ✨ Card component */
+/* ==================== Component Styles ==================== */
+
+/* Card component */
 .card {
-  @apply bg-[rgba(255,255,255,0.03)] backdrop-blur-lg rounded-2xl p-6 shadow-xl border border-slate-800 transition-all duration-300;
+  @apply bg-[rgba(255,255,255,0.03)] backdrop-blur-xl rounded-2xl p-8
+  shadow-2xl border border-slate-700/50 transition-all duration-300;
 }
 
-/* 🔘 Button component */
+/* Button component */
 .button {
-  @apply inline-flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-600 active:bg-sky-700 
-  text-white font-semibold px-4 py-2 rounded-lg shadow-lg transition-all duration-300 hover:scale-[1.03];
+  @apply inline-flex items-center justify-center gap-2
+  bg-sky-500 hover:bg-sky-600 active:bg-sky-700 disabled:bg-slate-700 disabled:cursor-not-allowed
+  text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg
+  transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]
+  disabled:opacity-50 disabled:hover:scale-100;
 }
 
-/* 🧩 Input field */
+/* Input field */
 .input {
-  @apply w-full bg-transparent border border-slate-700 rounded-lg px-3 py-2 
-  focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition;
+  @apply w-full bg-slate-900/50 border border-slate-600 rounded-xl px-4 py-3
+  text-slate-100 placeholder:text-slate-500
+  focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500
+  transition-all duration-200;
 }
 
-/* ℹ️ Small text */
+/* Small text helper */
 .small {
-  @apply text-slate-400 text-sm;
+  @apply text-slate-400 text-sm leading-relaxed;
 }
 
-/* 🪢 Tug-of-war visuals */
-.tug-track {
-  @apply relative bg-slate-900 h-16 rounded-full overflow-hidden shadow-inner border border-slate-800 mt-6;
-}
+/* ==================== Animations ==================== */
 
-.tug-handle {
-  @apply absolute top-1/2 -translate-y-1/2 w-40 h-14 rounded-md flex items-center justify-center font-bold text-white text-lg;
-  transition: all 0.3s ease-in-out;
-}
-
-.tug-left {
-  background: linear-gradient(90deg, #ef4444, #f97316);
-  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
-}
-
-.tug-right {
-  background: linear-gradient(90deg, #10b981, #06b6d4);
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
-}
-
-/* ✨ Fancy hover + transition helpers */
 .fade-in {
   animation: fadeIn 0.5s ease forwards;
 }
@@ -62,10 +68,45 @@ body {
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Pulse animation for emphasis */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* ==================== Custom Scrollbar ==================== */
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
 }
