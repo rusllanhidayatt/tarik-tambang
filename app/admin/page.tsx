@@ -177,7 +177,8 @@ export default function Admin() {
         correct: answer.is_correct,
         delta,
         team: answer.team,
-        ts: new Date(answer.created_at).getTime()
+        ts: new Date(answer.created_at).getTime(),
+        answerText: answer.answer_text || answer.answer || ''
       }
 
       setRecentAnswers(prev => [rec, ...prev].slice(0, 12))
@@ -276,7 +277,7 @@ export default function Admin() {
           }`}>
             👦 <motion.span key={scores.left} initial={{ scale: 1.4 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>{scores.left}</motion.span>
           </div>
-          <div className="mt-2 text-slate-400 text-sm">Tim Putra</div>
+          <div className="mt-2 text-slate-400 text-sm">Ikhwan</div>
         </div>
 
         <div className="w-1/3 text-center">
@@ -296,7 +297,7 @@ export default function Admin() {
           }`}>
             👧 <motion.span key={scores.right} initial={{ scale: 1.4 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>{scores.right}</motion.span>
           </div>
-          <div className="mt-2 text-slate-400 text-sm">Tim Putri</div>
+          <div className="mt-2 text-slate-400 text-sm">Akhwat</div>
         </div>
       </div>
 
@@ -351,29 +352,44 @@ export default function Admin() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="flex items-center justify-between gap-3 p-2 rounded-lg bg-slate-50/50"
+                    className="flex flex-col gap-2 p-3 rounded-lg bg-slate-50/50 border-l-4"
+                    style={{
+                      borderLeftColor: r.team === 'boy' ? '#3b82f6' : '#ec4899'
+                    }}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${
-                        r.team === 'boy' ? 'bg-blue-500' : 'bg-pink-500'
-                      }`}>
-                        {r.alias?.[0]?.toUpperCase() || r.name?.[0]}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${
+                          r.team === 'boy' ? 'bg-blue-500' : 'bg-pink-500'
+                        }`}>
+                          {r.alias?.[0]?.toUpperCase() || r.name?.[0]}
+                        </div>
+                        <div>
+                          <div className="font-semibold text-sm">{r.alias}</div>
+                          <div className="text-xs text-slate-400">{r.name}</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="font-semibold text-sm">{r.alias}</div>
-                        <div className="text-xs text-slate-400">{r.name}</div>
+                      <div className="text-right">
+                        <div className={`font-bold ${
+                          r.correct ? 'text-green-500' : 'text-rose-500'
+                        }`}>
+                          {r.correct ? `+${r.delta}` : r.delta}
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          {new Date(r.ts).toLocaleTimeString()}
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className={`font-bold ${
-                        r.correct ? 'text-green-500' : 'text-rose-500'
-                      }`}>
-                        {r.correct ? `+${r.delta}` : r.delta}
+                    {r.answerText && (
+                      <div className="text-xs pl-11">
+                        <span className="text-slate-500">Jawaban: </span>
+                        <span className={`font-medium ${
+                          r.correct ? 'text-green-600' : 'text-rose-600'
+                        }`}>
+                          {r.answerText}
+                        </span>
                       </div>
-                      <div className="text-xs text-slate-400">
-                        {new Date(r.ts).toLocaleTimeString()}
-                      </div>
-                    </div>
+                    )}
                   </motion.div>
                 ))}
               </AnimatePresence>
