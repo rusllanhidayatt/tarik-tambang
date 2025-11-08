@@ -126,7 +126,7 @@ export function pollTeamScores(
 
       if (data) {
         const scores = { boy: 0, girl: 0 }
-        data.forEach(item => {
+        data.forEach((item: { team: 'boy' | 'girl', score: number }) => {
           if (item.team === 'boy' || item.team === 'girl') {
             scores[item.team] = item.score
           }

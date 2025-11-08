@@ -211,7 +211,7 @@ export async function getTeamScores(sessionId: string): Promise<{ boy: number; g
   if (error) throw error
 
   const scores = { boy: 0, girl: 0 }
-  data?.forEach(item => {
+  data?.forEach((item: { team: 'boy' | 'girl', score: number }) => {
     if (item.team === 'boy' || item.team === 'girl') {
       scores[item.team] = item.score
     }

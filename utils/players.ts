@@ -1,4 +1,12 @@
-export const players = [
+export type Team = 'boy' | 'girl'
+
+export interface Player {
+  name: string
+  aliases: string[]
+  team: Team
+}
+
+export const players: Player[] = [
   // 🧑 Boy team
   { name: 'Irfansyah Riyanto', aliases: ['Irfansyah', 'Irfan'], team: 'boy' },
   { name: 'Nur Roni Dinnurohman', aliases: ['Roni'], team: 'boy' },

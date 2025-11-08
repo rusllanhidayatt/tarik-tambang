@@ -22,6 +22,7 @@ export type Question = {
   question: string
   answer: string
   time_sec: number
+  category?: string
   keyword?: string
   created_at: string
   updated_at: string
