@@ -20,17 +20,26 @@ export default function CountdownModal({ onFinish }: { onFinish: () => void }) {
       {count > 0 && (
         <motion.div
           key={count}
-          initial={{ opacity: 0, scale: 0.6 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0 }}
-          transition={{ duration: 0.4 }}
-          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
         >
           <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 150, damping: 8 }}
-            className="text-white text-[8rem] font-extrabold drop-shadow-2xl"
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 1.2, opacity: 0 }}
+            transition={{
+              type: 'spring',
+              stiffness: 200,
+              damping: 20
+            }}
+            className="text-white text-[12rem] font-black"
+            style={{
+              textShadow: '0 10px 50px rgba(0, 0, 0, 0.5)',
+              WebkitTextStroke: '4px rgba(255, 255, 255, 0.3)'
+            }}
           >
             {count}
           </motion.div>

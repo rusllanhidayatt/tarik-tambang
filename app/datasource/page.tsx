@@ -5,9 +5,22 @@ import { loadData, saveData } from '../../utils/storage'
 
 export default function DataSource() {
   const [rows, setRows] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
-    setRows(loadData())
+    async function load() {
+      try {
+        const data = await loadData()
+        setRows(data)
+      } catch (error) {
+        console.error('Error loading data:', error)
+        alert('Error loading questions')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    load()
   }, [])
 
   function addRow() {
@@ -35,9 +48,17 @@ export default function DataSource() {
     setRows(cp)
   }
 
-  function saveAll() {
-    saveData(rows)
-    alert('✅ Disimpan ke localStorage')
+  async function saveAll() {
+    setIsSaving(true)
+    try {
+      await saveData(rows)
+      alert('✅ Disimpan ke Supabase & localStorage')
+    } catch (error) {
+      console.error('Error saving data:', error)
+      alert('Error saving questions. Check console.')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   function exportJSON() {
@@ -67,6 +88,26 @@ export default function DataSource() {
     r.readAsText(f)
   }
 
+  function setAllTimeTo30() {
+    if (!confirm('Set waktu SEMUA pertanyaan menjadi 30 detik?')) return
+
+    const updated = rows.map(r => ({
+      ...r,
+      timeSec: 30
+    }))
+    setRows(updated)
+    alert('✅ Semua waktu pertanyaan diset ke 30 detik. Jangan lupa klik "Simpan"!')
+  }
+
+  if (isLoading) {
+    return (
+      <div className="card fade-in text-center p-6">
+        <div className="text-xl font-bold mb-2">Loading...</div>
+        <div className="text-slate-400">Fetching questions from database...</div>
+      </div>
+    )
+  }
+
   return (
     <div className="card fade-in">
       <div className="flex justify-between items-center">
@@ -78,7 +119,12 @@ export default function DataSource() {
 
       <div className="mt-4 flex flex-wrap gap-3">
         <button className="button" onClick={addRow}>➕ Tambah Soal</button>
-        <button className="button" onClick={saveAll}>💾 Simpan</button>
+        <button className="button" onClick={saveAll} disabled={isSaving}>
+          {isSaving ? '💾 Menyimpan...' : '💾 Simpan'}
+        </button>
+        <button className="button bg-blue-600 hover:bg-blue-700" onClick={setAllTimeTo30}>
+          ⏱️ Set Semua ke 30 Detik
+        </button>
         <button className="button" onClick={exportJSON}>⬇️ Export</button>
         <label className="button cursor-pointer">
           ⬆️ Import
