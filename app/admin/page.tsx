@@ -15,7 +15,8 @@ import {
   subscribeToPlayerAnswers,
   subscribeToTeamScores,
   getTeamScores,
-  clearAllGameData
+  clearAllGameData,
+  getTopContributors
 } from '../../lib/supabase-helpers'
 
 export default function Admin() {
@@ -34,6 +35,7 @@ export default function Admin() {
   const [showMotivation, setShowMotivation] = useState(false)
   const [gameEnded, setGameEnded] = useState(false)
   const [showVictoryModal, setShowVictoryModal] = useState(false)
+  const [topContributors, setTopContributors] = useState<Array<{ player_name: string; total_score: number }>>([])
   const [alertState, setAlertState] = useState<{ isOpen: boolean; message: string; type: 'alert' | 'confirm'; onConfirm?: () => void; onCancel?: () => void }>({ isOpen: false, message: '', type: 'alert' })
   const confirmResolveRef = useRef<((value: boolean) => void) | null>(null)
   const sfxRef = useRef({ point: null as HTMLAudioElement | null, wrong: null as HTMLAudioElement | null, win: null as HTMLAudioElement | null })
@@ -214,6 +216,20 @@ export default function Admin() {
           finalScores: scores,
           totalQuestions: rows.length,
         })
+
+        // Get top 3 contributors from winning team
+        const winnerTeam = scores.left > scores.right ? 'boy' : scores.right > scores.left ? 'girl' : null
+        if (winnerTeam) {
+          try {
+            const contributors = await getTopContributors(sessionId, winnerTeam, 3)
+            setTopContributors(contributors)
+          } catch (error) {
+            console.error('Error fetching top contributors:', error)
+            setTopContributors([])
+          }
+        } else {
+          setTopContributors([])
+        }
 
         setGameEnded(true)
         setShowConfetti(true)
@@ -496,6 +512,7 @@ export default function Admin() {
               setScores({ left: 0, right: 0 })
               setShowConfetti(false)
               setRecentAnswers([])
+              setTopContributors([])
             } catch (error) {
               console.error('Error resetting game:', error)
               customAlert('Error resetting game. Check console.')
@@ -525,7 +542,7 @@ export default function Admin() {
             className="flex flex-col items-center space-y-3"
           >
             <div className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-              <span className="text-lg">👦</span>
+              <span className="text-lg">👳🏻‍♂️</span>
               <span>Ikhwan</span>
             </div>
             <motion.div
@@ -612,7 +629,7 @@ export default function Admin() {
             className="flex flex-col items-center space-y-3"
           >
             <div className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-              <span className="text-lg">👧</span>
+              <span className="text-lg">🧕🏻</span>
               <span>Akhwat</span>
             </div>
             <motion.div
@@ -659,7 +676,7 @@ export default function Admin() {
       {/* Recent Answers */}
       <div className="card">
         <div className="flex items-center justify-between mb-4">
-          <h4 className="text-lg font-bold text-white">📊 Recent Answers</h4>
+          <h4 className="text-lg font-bold text-white">Recent Answers</h4>
           <div className="text-xs text-slate-500">{recentAnswers.length} answers</div>
         </div>
 
@@ -824,7 +841,7 @@ export default function Admin() {
               animate={{ scale: 1, opacity: 1, rotate: 0 }}
               exit={{ scale: 0.5, opacity: 0, rotate: 10 }}
               transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-              className="bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 rounded-3xl p-12 max-w-2xl w-full border-4 border-yellow-400 shadow-2xl relative overflow-hidden"
+              className="bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 rounded-3xl max-w-2xl w-full border-4 border-yellow-400 shadow-2xl relative overflow-hidden max-h-[90vh] flex flex-col"
             >
               {/* Sparkles background */}
               <div className="absolute inset-0 opacity-20">
@@ -852,10 +869,10 @@ export default function Admin() {
                 ))}
               </div>
 
-              <div className="relative z-10 text-center">
+              <div className="relative z-10 text-center overflow-y-auto flex-1 p-6 md:p-8">
                 {/* Trophy */}
                 <motion.div
-                  className="text-9xl mb-6"
+                  className="text-6xl md:text-7xl mb-4"
                   animate={{
                     scale: [1, 1.2, 1],
                     rotate: [0, 10, -10, 0],
@@ -869,32 +886,86 @@ export default function Admin() {
                   🏆
                 </motion.div>
 
-                <h2 className="text-5xl font-black text-yellow-400 mb-4 drop-shadow-2xl">
+                <h2 className="text-3xl md:text-4xl font-black text-yellow-400 mb-3 drop-shadow-2xl">
                   GAME OVER!
                 </h2>
 
                 {/* Winner Announcement */}
-                <div className="mb-8">
+                <div className="mb-4">
                   {scores.left > scores.right ? (
-                    <div className="bg-blue-500/20 border-4 border-blue-400 rounded-2xl p-6">
-                      <div className="text-6xl mb-2">👦</div>
-                      <div className="text-3xl font-black text-blue-400">IKHWAN MENANG!</div>
-                      <div className="text-6xl font-black text-white mt-2">{scores.left} pts</div>
+                    <div className="bg-blue-500/20 border-4 border-blue-400 rounded-2xl p-4">
+                      <div className="text-4xl md:text-5xl mb-2">👳🏻‍♂️</div>
+                      <div className="text-2xl md:text-3xl font-black text-blue-400">IKHWAN MENANG!</div>
+                      <div className="text-4xl md:text-5xl font-black text-white mt-2">{scores.left} pts</div>
                     </div>
                   ) : scores.right > scores.left ? (
-                    <div className="bg-pink-500/20 border-4 border-pink-400 rounded-2xl p-6">
-                      <div className="text-6xl mb-2">👧</div>
-                      <div className="text-3xl font-black text-pink-400">AKHWAT MENANG!</div>
-                      <div className="text-6xl font-black text-white mt-2">{scores.right} pts</div>
+                    <div className="bg-pink-500/20 border-4 border-pink-400 rounded-2xl p-4">
+                      <div className="text-4xl md:text-5xl mb-2">🧕🏻</div>
+                      <div className="text-2xl md:text-3xl font-black text-pink-400">AKHWAT MENANG!</div>
+                      <div className="text-4xl md:text-5xl font-black text-white mt-2">{scores.right} pts</div>
                     </div>
                   ) : (
-                    <div className="bg-purple-500/20 border-4 border-purple-400 rounded-2xl p-6">
-                      <div className="text-6xl mb-2">🤝</div>
-                      <div className="text-3xl font-black text-purple-400">SERI!</div>
-                      <div className="text-4xl font-black text-white mt-2">{scores.left} - {scores.right}</div>
+                    <div className="bg-purple-500/20 border-4 border-purple-400 rounded-2xl p-4">
+                      <div className="text-4xl md:text-5xl mb-2">🤝</div>
+                      <div className="text-2xl md:text-3xl font-black text-purple-400">SERI!</div>
+                      <div className="text-3xl md:text-4xl font-black text-white mt-2">{scores.left} - {scores.right}</div>
                     </div>
                   )}
                 </div>
+
+                {/* Top 3 Contributors - hanya tampil jika ada pemenang */}
+                {topContributors.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="mb-4"
+                  >
+                    <div className="text-xl md:text-2xl font-black text-yellow-400 mb-3 flex items-center justify-center gap-2">
+                      <span>🏆</span>
+                      <span>Tiga Jagoan Penarik Skor</span>
+                      <span>🏆</span>
+                    </div>
+                    <div className="space-y-2">
+                      {topContributors.map((contributor, idx) => {
+                        const playerObj = players.find(x => x.name === contributor.player_name) || null
+                        const aliasDisplay = playerObj?.aliases?.[0] || contributor.player_name
+                        const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'
+                        
+                        return (
+                          <motion.div
+                            key={contributor.player_name}
+                            initial={{ opacity: 0, x: 0 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.4 + idx * 0.1 }}
+                            className={`bg-white/10 border-2 rounded-xl p-3 flex items-center justify-between ${
+                              idx === 0 
+                                ? 'border-yellow-400 shadow-lg shadow-yellow-400/30' 
+                                : idx === 1
+                                ? 'border-slate-300 shadow-lg shadow-slate-300/20'
+                                : 'border-amber-600 shadow-lg shadow-amber-600/20'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="text-3xl">{medal}</div>
+                              <div>
+                                <div className="text-md md:text-xl font-black text-white">{contributor.player_name}</div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className={`text-2xl md:text-3xl font-black ${
+                                contributor.total_score >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                              }`}>
+                                {contributor.total_score >= 0 ? '+' : ''}{contributor.total_score}
+                              </div>
+                              <div className="text-xs text-slate-400">points</div>
+                            </div>
+                          </motion.div>
+                        )
+                      })}
+                    </div>
+                  </motion.div>
+                )}
 
                 {/* Stats */}
                 {/* <div className="grid grid-cols-2 gap-4 mb-6">
@@ -908,13 +979,13 @@ export default function Admin() {
                   </div>
                 </div> */}
 
-                <div className="text-slate-300 text-lg mb-6">
+                <div className="text-slate-300 text-base md:text-lg mb-4">
                   Total {rows.length} Pertanyaan Selesai! 🎉
                 </div>
 
                 <div className="flex gap-3">
                   <button
-                    className="button flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-lg py-4"
+                    className="button flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-base md:text-lg py-3"
                     onClick={async () => {
                       const confirmed = await customConfirm('Mulai game baru?')
                       if (!confirmed) return
@@ -926,6 +997,7 @@ export default function Admin() {
                         setShowVictoryModal(false)
                         setGameEnded(false)
                         setRecentAnswers([])
+                        setTopContributors([])
                       } catch (error) {
                         console.error('Error resetting:', error)
                       }
@@ -934,7 +1006,7 @@ export default function Admin() {
                     🔄 Main Lagi
                   </button>
                   <button
-                    className="button flex-1 bg-gradient-to-r from-slate-600 to-slate-700 text-lg py-4"
+                    className="button flex-1 bg-gradient-to-r from-slate-600 to-slate-700 text-base md:text-lg py-3"
                     onClick={() => setShowVictoryModal(false)}
                   >
                     ✅ Tutup

@@ -304,3 +304,35 @@ export async function clearAllGameData(sessionId: string) {
   // Delete player sessions
   await supabase.from('player_sessions').delete().eq('session_id', sessionId)
 }
+
+// ============================================
+// TOP CONTRIBUTORS
+// ============================================
+
+export async function getTopContributors(sessionId: string, team: 'boy' | 'girl', limit: number = 3) {
+  const { data, error } = await supabase
+    .from('player_answers')
+    .select('player_name, score')
+    .eq('session_id', sessionId)
+    .eq('team', team)
+
+  if (error) throw error
+
+  // Group by player_name and sum scores
+  const playerTotals: Record<string, number> = {}
+  data?.forEach((answer) => {
+    const playerName = answer.player_name
+    playerTotals[playerName] = (playerTotals[playerName] || 0) + answer.score
+  })
+
+  // Convert to array and sort by total score (descending)
+  const contributors = Object.entries(playerTotals)
+    .map(([player_name, total_score]) => ({
+      player_name,
+      total_score
+    }))
+    .sort((a, b) => b.total_score - a.total_score)
+    .slice(0, limit)
+
+  return contributors
+}

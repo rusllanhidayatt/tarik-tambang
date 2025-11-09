@@ -45,9 +45,26 @@ export default function GameBoard({ question, scores }: any) {
 
   const lead = scores.right - scores.left
   const highEnergy = Math.abs(lead) > 6
+  
+  // Calculate avatar offset: tim yang menang mundur ke belakang
+  // Boy (left) menang -> mundur ke kiri (negatif)
+  // Girl (right) menang -> mundur ke kanan (positif)
+  const maxPullBack = 40 // Max mundur 40%
+  const pullBackMultiplier = 3 // 3% per poin selisih
+  
+  const boyPullBack = scores.left > scores.right 
+    ? -Math.min(maxPullBack, (scores.left - scores.right) * pullBackMultiplier)
+    : 0
+  
+  const girlPullBack = scores.right > scores.left
+    ? Math.min(maxPullBack, (scores.right - scores.left) * pullBackMultiplier)
+    : 0
+  
+  // Center marker offset: bergeser ke arah tim yang menang
+  const centerMarkerOffset = offset // 2% per poin selisih
 
   return (
-    <div className="card relative overflow-hidden">
+    <div className="card relative overflow-x-visible overflow-y-hidden">
       {/* Question Header */}
       <div className="text-center mb-8">
         {/* Category Badge */}
@@ -81,7 +98,7 @@ export default function GameBoard({ question, scores }: any) {
         </AnimatePresence>
       </div>
 
-      <div className="relative h-64 sm:h-80 mt-12 flex justify-center items-center">
+      <div className="relative h-64 sm:h-80 mt-12 flex justify-center items-center overflow-visible">
         {/* center guideline with pulsing indicator */}
         <motion.div
           animate={{
@@ -94,27 +111,22 @@ export default function GameBoard({ question, scores }: any) {
             scaleY: { repeat: highEnergy ? Infinity : 0, duration: 0.5 },
             backgroundColor: { repeat: highEnergy ? Infinity : 0, duration: 0.8 }
           }}
-          className="absolute w-full h-1 top-1/2 -translate-y-1/2"
+          className="absolute w-full h-1 top-1/2 -translate-y-1/2 z-0"
         />
 
 
-        {/* Rope container - Realistic tug of war rope */}
-        <motion.div
+        {/* Rope container - Realistic tug of war rope (STATIS di tengah) */}
+        <div
           key={shakeKey}
-          className="absolute w-[70%] max-w-[900px] h-[18px] rounded-sm shadow-2xl overflow-hidden"
-          animate={{
-            x: `${offset}%`,
-          }}
-          transition={{
-            type: 'spring',
-            stiffness: 200,
-            damping: 20,
-            mass: 0.5
-          }}
+          className="absolute w-[90%] max-w-[1000px] h-[18px] rounded-sm shadow-2xl z-10 left-1/2 -translate-x-1/2"
           style={{
             border: '3px solid #8B4513',
             background: 'linear-gradient(180deg, #CD853F 0%, #8B4513 50%, #654321 100%)',
-            borderRadius: '2px'
+            borderRadius: '2px',
+            zIndex: 10,
+            boxShadow: '0 4px 12px rgba(139, 69, 19, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.1)',
+            top: '50%',
+            transform: 'translate(-50%, -50%)'
           }}
         >
           {/* Rope texture - stripes pattern */}
@@ -131,42 +143,55 @@ export default function GameBoard({ question, scores }: any) {
             ))}
           </div>
 
-          {/* Center marker - red ribbon */}
+          {/* Center marker - red ribbon (BERGESER berdasarkan skor) */}
           <motion.div
-            className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-full"
+            className="absolute top-0 w-8 h-full"
+            animate={{
+              left: `calc(50% + ${centerMarkerOffset * 0.5}%)`, // Bergeser ke arah tim yang menang
+            }}
+            transition={{
+              type: 'spring',
+              stiffness: 200,
+              damping: 20,
+              mass: 0.5
+            }}
             style={{
+              transform: 'translateX(-50%)',
               background: 'linear-gradient(90deg, transparent, #dc2626, transparent)',
               boxShadow: '0 0 10px rgba(220, 38, 38, 0.5)'
             }}
           />
-        </motion.div>
+        </div>
 
 
         {/* Boy avatar */}
         <motion.div
           animate={{
-            x: offset / 2.3,
-            rotate: offset > 10 ? 12 : offset > 5 ? 6 : offset < -10 ? -12 : offset < -5 ? -6 : 0,
+            x: `${boyPullBack}%`, // Mundur ke kiri saat menang
+            rotate: scores.left > scores.right ? -12 : scores.left < scores.right ? 6 : 0,
           }}
           transition={{
             x: { type: 'spring', stiffness: 140, damping: 14 },
             rotate: { type: 'spring', stiffness: 110, damping: 12 }
           }}
-          className="absolute left-[6%] bottom-0 flex flex-col items-center"
+          className="absolute left-[6%] bottom-0 flex flex-col items-center z-20"
+          style={{
+            maxWidth: '120px'
+          }}
         >
           <motion.div
             animate={
-              highEnergy && offset < -4
+              highEnergy && scores.left > scores.right
                 ? {
-                    y: [0, -6, -3, -8, -2, 0],
+                    y: [-30, -36, -33, -38, -32, -30],
                     x: [0, -2, 1, -1, 2, 0],
                     rotate: [0, -3, 2, -2, 3, 0],
                     scale: [1, 1.05, 0.97, 1.03, 0.99, 1]
                   }
-                : { y: 0, x: 0, rotate: 0, scale: 1 }
+                : { y: -30, x: 0, rotate: 0, scale: 1 }
             }
             transition={{
-              repeat: highEnergy && offset < -4 ? Infinity : 0,
+              repeat: highEnergy && scores.left > scores.right ? Infinity : 0,
               duration: 0.6,
               ease: 'easeInOut'
             }}
@@ -197,7 +222,7 @@ export default function GameBoard({ question, scores }: any) {
             {scores.left} pts
           </motion.div>
 
-          {highEnergy && offset < -4 && (
+          {highEnergy && scores.left > scores.right && (
           <motion.div
             initial={{ opacity: 0, scale: 0 }}
             animate={{ opacity: [0, 0.8, 0], scale: [0.5, 1.5, 2] }}
@@ -211,28 +236,31 @@ export default function GameBoard({ question, scores }: any) {
         {/* Girl avatar */}
         <motion.div
           animate={{
-            x: offset / 2.3,
-            rotate: offset > 10 ? 12 : offset > 5 ? 6 : offset < -10 ? -12 : offset < -5 ? -6 : 0,
+            x: `${girlPullBack}%`, // Mundur ke kanan saat menang
+            rotate: scores.right > scores.left ? 12 : scores.right < scores.left ? -6 : 0,
           }}
           transition={{
             x: { type: 'spring', stiffness: 140, damping: 14 },
             rotate: { type: 'spring', stiffness: 110, damping: 12 }
           }}
-          className="absolute right-[6%] bottom-0 flex flex-col items-center"
+          className="absolute right-[6%] bottom-0 flex flex-col items-center z-20"
+          style={{
+            maxWidth: '120px'
+          }}
         >
           <motion.div
             animate={
-              highEnergy && offset > 4
+              highEnergy && scores.right > scores.left
                 ? {
-                    y: [0, -6, -3, -8, -2, 0],
+                    y: [-30, -36, -33, -38, -32, -30],
                     x: [0, 2, -1, 1, -2, 0],
                     rotate: [0, 3, -2, 2, -3, 0],
                     scale: [1, 1.05, 0.97, 1.03, 0.99, 1]
                   }
-                : { y: 0, x: 0, rotate: 0, scale: 1 }
+                : { y: -30, x: 0, rotate: 0, scale: 1 }
             }
             transition={{
-              repeat: highEnergy && offset > 4 ? Infinity : 0,
+              repeat: highEnergy && scores.right > scores.left ? Infinity : 0,
               duration: 0.6,
               ease: 'easeInOut'
             }}
@@ -263,7 +291,7 @@ export default function GameBoard({ question, scores }: any) {
             {scores.right} pts
           </motion.div>
 
-          {highEnergy && offset > 4 && (
+          {highEnergy && scores.right > scores.left && (
           <motion.div
             initial={{ opacity: 0, scale: 0 }}
             animate={{ opacity: [0, 0.8, 0], scale: [0.5, 1.5, 2] }}

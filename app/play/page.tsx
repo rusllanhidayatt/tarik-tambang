@@ -326,7 +326,7 @@ export default function Play() {
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       {/* Decorative background elements */}
       <div className={`absolute top-10 ${session?.team === 'boy' ? 'left-10' : 'right-10'} text-5xl opacity-10 animate-bounce-glow`}>
-        {session?.team === 'boy' ? '👦' : '👧'}
+        {session?.team === 'boy' ? '👳🏻‍♂️' : '🧕🏻'}
       </div>
       
       <motion.div
@@ -419,12 +419,10 @@ export default function Play() {
                   >
                     {isActive ? (
                       <span className="flex items-center justify-center gap-3">
-                        <span className="text-2xl">📤</span>
                         <span>Kirim Jawaban</span>
                       </span>
                     ) : (
                       <span className="flex items-center justify-center gap-3">
-                        <span>⏸️</span>
                         <span>Waktu Habis</span>
                       </span>
                     )}
