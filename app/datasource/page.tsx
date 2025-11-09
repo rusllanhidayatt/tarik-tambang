@@ -1,12 +1,54 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { loadData, saveData } from '../../utils/storage'
+import AlertModal from '../../components/AlertModal'
 
 export default function DataSource() {
   const [rows, setRows] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [alertState, setAlertState] = useState<{ isOpen: boolean; message: string; type: 'alert' | 'confirm'; onConfirm?: () => void; onCancel?: () => void }>({ isOpen: false, message: '', type: 'alert' })
+  const confirmResolveRef = useRef<((value: boolean) => void) | null>(null)
+
+  const customAlert = (message: string) => {
+    return new Promise<void>((resolve) => {
+      setAlertState({
+        isOpen: true,
+        message,
+        type: 'alert',
+        onConfirm: () => {
+          setAlertState({ isOpen: false, message: '', type: 'alert' })
+          resolve()
+        }
+      })
+    })
+  }
+
+  const customConfirm = (message: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      confirmResolveRef.current = resolve
+      setAlertState({
+        isOpen: true,
+        message,
+        type: 'confirm',
+        onConfirm: () => {
+          setAlertState({ isOpen: false, message: '', type: 'alert' })
+          if (confirmResolveRef.current) {
+            confirmResolveRef.current(true)
+            confirmResolveRef.current = null
+          }
+        },
+        onCancel: () => {
+          setAlertState({ isOpen: false, message: '', type: 'alert' })
+          if (confirmResolveRef.current) {
+            confirmResolveRef.current(false)
+            confirmResolveRef.current = null
+          }
+        }
+      })
+    })
+  }
 
   useEffect(() => {
     async function load() {
@@ -15,7 +57,7 @@ export default function DataSource() {
         setRows(data)
       } catch (error) {
         console.error('Error loading data:', error)
-        alert('Error loading questions')
+        customAlert('Error loading questions')
       } finally {
         setIsLoading(false)
       }
@@ -53,10 +95,10 @@ export default function DataSource() {
     setIsSaving(true)
     try {
       await saveData(rows)
-      alert('✅ Disimpan ke Supabase & localStorage')
+      await customAlert('✅ Disimpan ke Supabase & localStorage')
     } catch (error) {
       console.error('Error saving data:', error)
-      alert('Error saving questions. Check console.')
+      customAlert('Error saving questions. Check console.')
     } finally {
       setIsSaving(false)
     }
@@ -81,23 +123,24 @@ export default function DataSource() {
       try {
         const parsed = JSON.parse(String(ev.target?.result))
         setRows(parsed)
-        alert('✅ Import sukses')
+        customAlert('✅ Import sukses')
       } catch (err) {
-        alert('❌ JSON tidak valid')
+        customAlert('❌ JSON tidak valid')
       }
     }
     r.readAsText(f)
   }
 
-  function setAllTimeTo30() {
-    if (!confirm('Set waktu SEMUA pertanyaan menjadi 30 detik?')) return
+  async function setAllTimeTo30() {
+    const confirmed = await customConfirm('Set waktu SEMUA pertanyaan menjadi 30 detik?')
+    if (!confirmed) return
 
     const updated = rows.map(r => ({
       ...r,
       timeSec: 30
     }))
     setRows(updated)
-    alert('✅ Semua waktu pertanyaan diset ke 30 detik. Jangan lupa klik "Simpan"!')
+    await customAlert('✅ Semua waktu pertanyaan diset ke 30 detik. Jangan lupa klik "Simpan"!')
   }
 
   if (isLoading) {
@@ -231,6 +274,16 @@ export default function DataSource() {
           )}
         </div>
       </div>
+
+      <AlertModal
+        isOpen={alertState.isOpen}
+        message={alertState.message}
+        type={alertState.type}
+        onConfirm={alertState.onConfirm}
+        onCancel={alertState.onCancel}
+        confirmText={alertState.type === 'confirm' ? 'Ya' : 'OK'}
+        cancelText="Batal"
+      />
     </div>
   )
 }

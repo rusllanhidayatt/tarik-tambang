@@ -3,11 +3,27 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { getCurrentSession } from '../../lib/supabase-helpers'
+import AlertModal from '../../components/AlertModal'
 
 export default function DebugPage() {
   const [logs, setLogs] = useState<string[]>([])
   const [session, setSession] = useState<any>(null)
   const [broadcasts, setBroadcasts] = useState<any[]>([])
+  const [alertState, setAlertState] = useState<{ isOpen: boolean; message: string; type: 'alert' | 'confirm'; onConfirm?: () => void }>({ isOpen: false, message: '', type: 'alert' })
+
+  const customAlert = (message: string) => {
+    return new Promise<void>((resolve) => {
+      setAlertState({
+        isOpen: true,
+        message,
+        type: 'alert',
+        onConfirm: () => {
+          setAlertState({ isOpen: false, message: '', type: 'alert' })
+          resolve()
+        }
+      })
+    })
+  }
 
   const addLog = (msg: string) => {
     console.log(msg)
@@ -95,7 +111,7 @@ export default function DebugPage() {
 
   const testBroadcast = async () => {
     if (!session) {
-      alert('No active session!')
+      await customAlert('No active session!')
       return
     }
 
@@ -238,6 +254,14 @@ export default function DebugPage() {
           </div>
         </div>
       </div>
+
+      <AlertModal
+        isOpen={alertState.isOpen}
+        message={alertState.message}
+        type={alertState.type}
+        onConfirm={alertState.onConfirm}
+        confirmText="OK"
+      />
     </div>
   )
 }

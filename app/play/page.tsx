@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { answerMatches, calcScore } from '../../utils/scoring'
 import { players } from '../../utils/players'
+import AlertModal from '../../components/AlertModal'
 import {
   getCurrentSession,
   createPlayerSession,
@@ -25,7 +26,48 @@ export default function Play() {
   const [expired, setExpired] = useState(false)
   const [allAnswered, setAllAnswered] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [alertState, setAlertState] = useState<{ isOpen: boolean; message: string; type: 'alert' | 'confirm'; onConfirm?: () => void; onCancel?: () => void }>({ isOpen: false, message: '', type: 'alert' })
+  const confirmResolveRef = useRef<((value: boolean) => void) | null>(null)
   const timerRef = useRef<any>(null)
+
+  const customAlert = (message: string) => {
+    return new Promise<void>((resolve) => {
+      setAlertState({
+        isOpen: true,
+        message,
+        type: 'alert',
+        onConfirm: () => {
+          setAlertState({ isOpen: false, message: '', type: 'alert' })
+          resolve()
+        }
+      })
+    })
+  }
+
+  const customConfirm = (message: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      confirmResolveRef.current = resolve
+      setAlertState({
+        isOpen: true,
+        message,
+        type: 'confirm',
+        onConfirm: () => {
+          setAlertState({ isOpen: false, message: '', type: 'alert' })
+          if (confirmResolveRef.current) {
+            confirmResolveRef.current(true)
+            confirmResolveRef.current = null
+          }
+        },
+        onCancel: () => {
+          setAlertState({ isOpen: false, message: '', type: 'alert' })
+          if (confirmResolveRef.current) {
+            confirmResolveRef.current(false)
+            confirmResolveRef.current = null
+          }
+        }
+      })
+    })
+  }
 
   // ====== Init session ======
   useEffect(() => {
@@ -51,7 +93,7 @@ export default function Play() {
 
         const playerData = players.find(p => p.name === parsed.name)
         if (!playerData) {
-          alert('Nama tidak valid.')
+          await customAlert('Nama tidak valid.')
           window.location.href = '/'
           return
         }
@@ -59,7 +101,7 @@ export default function Play() {
         // Get or wait for active session
         const gameSession = await getCurrentSession()
         if (!gameSession) {
-          alert('Belum ada sesi game aktif. Tunggu admin memulai game.')
+          await customAlert('Belum ada sesi game aktif. Tunggu admin memulai game.')
           window.location.href = '/'
           return
         }
@@ -77,7 +119,7 @@ export default function Play() {
         setSession({ ...parsed, team: playerData.team })
       } catch (error) {
         console.error('Error initializing player:', error)
-        alert('Error connecting to game. Please try again.')
+        customAlert('Error connecting to game. Please try again.')
       } finally {
         setIsLoading(false)
       }
@@ -187,7 +229,7 @@ export default function Play() {
 
     // Confirm jika jawaban kosong (akan dapat penalty)
     if (!trimmedAnswer) {
-      const confirmSubmit = confirm(
+      const confirmSubmit = await customConfirm(
         '⚠️ Jawaban kosong akan dianggap SALAH dan mendapat PENALTY!\n\nYakin ingin submit jawaban kosong?'
       )
       if (!confirmSubmit) return
@@ -213,12 +255,12 @@ export default function Play() {
       setIsActive(false)
     } catch (error: any) {
       if (error.message === 'Already answered this question') {
-        alert('Kamu sudah menjawab pertanyaan ini.')
+        customAlert('Kamu sudah menjawab pertanyaan ini.')
         setHasAnsweredState(true)
         setIsActive(false)
       } else {
         console.error('Error submitting answer:', error)
-        alert('Error mengirim jawaban. Coba lagi.')
+        customAlert('Error mengirim jawaban. Coba lagi.')
       }
     }
   }
@@ -252,36 +294,77 @@ export default function Play() {
     )
   }
 
-  const teamColor = session?.team === 'boy' ? 'blue' : 'pink'
-  const teamBg = session?.team === 'boy' ? 'from-blue-600 to-blue-700' : 'from-pink-600 to-pink-700'
-  const teamText = session?.team === 'boy' ? 'text-blue-400' : 'text-pink-400'
+  const teamColor = session?.team === 'boy' ? 'electric-blue' : 'magenta'
+  const teamBg = session?.team === 'boy' ? 'from-electric-blue to-electric-blue-dark' : 'from-magenta to-magenta-dark'
+  const teamText = session?.team === 'boy' ? 'text-electric-blue-light' : 'text-magenta-light'
+  const teamEmoji = session?.team === 'boy' ? '💪' : '✨'
+  const teamBorder = session?.team === 'boy' ? 'border-electric-blue/50' : 'border-magenta/50'
+  const teamGlow = session?.team === 'boy' ? 'shadow-electric-blue/30' : 'shadow-magenta/30'
+  const teamTimerColor = session?.team === 'boy' ? 'text-electric-blue-light' : 'text-magenta-light'
+  const teamCategoryBg = session?.team === 'boy' 
+    ? 'from-electric-blue/20 to-cyan-500/20 border-electric-blue/30' 
+    : 'from-magenta/20 to-pink-500/20 border-magenta/30'
+  const teamCategoryText = session?.team === 'boy' ? 'text-electric-blue-light' : 'text-magenta-light'
+  const teamInputBorder = session?.team === 'boy' ? 'focus:border-electric-blue focus:ring-electric-blue/30' : 'focus:border-magenta focus:ring-magenta/30'
+  
+  // Status messages dengan microinteraction
+  const getStatusMessage = () => {
+    if (!current) {
+      const messages = [
+        { emoji: '🎯', text: 'Operator lagi siap-siap narik tali… sabar ya!', delay: 0 },
+        { emoji: '⚡', text: 'Tali udah tegang, pertanyaan sebentar lagi dimulai!', delay: 0.2 },
+        { emoji: '🔥', text: 'Siap-siap! Game akan segera dimulai!', delay: 0.4 },
+      ]
+      return messages[Math.floor(Math.random() * messages.length)]
+    }
+    return null
+  }
+  
+  const statusMsg = getStatusMessage()
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="card max-w-2xl w-full">
-        {/* Player Info Header */}
-        <div className="flex items-center justify-between mb-6 pb-6 border-b border-slate-700">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className={`absolute top-10 ${session?.team === 'boy' ? 'left-10' : 'right-10'} text-5xl opacity-10 animate-bounce-glow`}>
+        {session?.team === 'boy' ? '👦' : '👧'}
+      </div>
+      
+      <motion.div
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className={`card max-w-2xl w-full border-2 ${teamBorder} ${teamGlow} shadow-2xl relative z-10`}
+      >
+        {/* Player Info Header dengan avatar besar */}
+        <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between mb-6 pb-6 border-b border-white/10 gap-4">
           <div className="flex items-center gap-4">
-            <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${teamBg} flex items-center justify-center text-white text-2xl font-bold shadow-lg`}>
+            <motion.div
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br ${teamBg} flex items-center justify-center text-white text-3xl sm:text-4xl font-black shadow-2xl border-4 border-white/20`}
+            >
               {session?.name?.[0]?.toUpperCase()}
-            </div>
+            </motion.div>
             <div>
-              <div className="text-xl font-bold text-white">{session?.name}</div>
-              <div className="text-sm text-slate-400">
-                Team: <span className={`font-semibold ${teamText}`}>
-                  {session?.team === 'boy' ? 'Ikhwan 👦' : 'Akhwat 👧'}
+              <div className="text-2xl sm:text-3xl font-black text-white mb-1">{session?.name}</div>
+              <div className="text-sm sm:text-base text-slate-300">
+                Team: <span className={`font-bold ${teamText} text-lg`}>
+                  {session?.team === 'boy' ? 'Ikhwan' : 'Akhwat'} {teamEmoji}
                 </span>
               </div>
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-xs text-slate-500 mb-1">Waktu Tersisa</div>
-            <div className={`text-4xl font-black tabular-nums transition-colors ${
-              timeLeft < 5 ? 'text-rose-500 pulse-glow' : timeLeft < 10 ? 'text-yellow-400' : 'text-emerald-400'
-            }`}>
+          <motion.div
+            animate={timeLeft < 5 ? { scale: [1, 1.2, 1] } : {}}
+            transition={{ duration: 0.5, repeat: timeLeft < 5 ? Infinity : 0 }}
+            className="text-center sm:text-right"
+          >
+            <div className="text-xs text-slate-400 mb-1 font-semibold">Waktu Tersisa</div>
+            <div className={`text-5xl sm:text-6xl font-black tabular-nums transition-all duration-300 ${
+              timeLeft < 5 ? 'text-rose-500 pulse-glow' : timeLeft < 10 ? 'text-yellow-400' : teamTimerColor
+            }`} style={{ textShadow: `0 0 20px ${timeLeft < 5 ? 'rgba(239, 68, 68, 0.5)' : timeLeft < 10 ? 'rgba(251, 191, 36, 0.5)' : 'rgba(0, 212, 255, 0.3)'}` }}>
               {timeLeft}s
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Question Area */}
@@ -293,25 +376,29 @@ export default function Play() {
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/30 rounded-full"
+                  className={`inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r ${teamCategoryBg} border rounded-full`}
                 >
-                  <span className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">
+                  <span className={`text-xs font-semibold ${teamCategoryText} uppercase tracking-wider`}>
                     📚 {current.category}
                   </span>
                 </motion.div>
               )}
 
-              <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700">
-                <h3 className="text-2xl font-bold text-white leading-relaxed">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`bg-gradient-to-br from-slate-800/60 to-slate-900/60 rounded-3xl p-6 sm:p-8 border-2 ${teamBorder} backdrop-blur-sm`}
+              >
+                <h3 className="text-2xl sm:text-3xl font-bold text-white leading-relaxed">
                   {current.question}
                 </h3>
-              </div>
+              </motion.div>
 
               {!hasAnsweredState && !allAnswered ? (
-                <div className="space-y-4">
+                <div className="space-y-5">
                   <input
-                    className="input text-lg"
-                    placeholder="Ketik jawaban kamu di sini..."
+                    className={`input text-lg ${teamInputBorder}`}
+                    placeholder="💭 Ketik jawaban kamu di sini..."
                     value={answer}
                     onChange={(e) => setAnswer(e.target.value)}
                     onKeyDown={(e) => {
@@ -323,43 +410,110 @@ export default function Play() {
                     autoFocus
                   />
 
-                  <button
-                    className={`button w-full text-lg py-4 ${teamBg} bg-gradient-to-r`}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`button w-full text-lg sm:text-xl py-5 ${teamBg} bg-gradient-to-r font-black`}
                     onClick={submit}
                     disabled={!isActive}
                   >
-                    {isActive ? '📤 Kirim Jawaban' : '⏸️ Waktu Habis'}
-                  </button>
+                    {isActive ? (
+                      <span className="flex items-center justify-center gap-3">
+                        <span className="text-2xl">📤</span>
+                        <span>Kirim Jawaban</span>
+                      </span>
+                    ) : (
+                      <span className="flex items-center justify-center gap-3">
+                        <span>⏸️</span>
+                        <span>Waktu Habis</span>
+                      </span>
+                    )}
+                  </motion.button>
 
                   {!answer.trim() && isActive && (
-                    <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 text-center">
-                      <div className="text-rose-400 font-semibold">
-                        ⚠️ Jawaban kosong akan dianggap SALAH dan mendapat penalty!
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="bg-gradient-to-r from-rose-500/20 to-red-500/20 border-2 border-rose-500/40 rounded-2xl p-4 text-center backdrop-blur-sm"
+                    >
+                      <div className="text-rose-300 font-bold flex items-center justify-center gap-2">
+                        <span className="text-2xl">⚠️</span>
+                        <span>Jawaban kosong akan dianggap SALAH dan mendapat penalty!</span>
                       </div>
-                    </div>
+                    </motion.div>
                   )}
                 </div>
               ) : (
-                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-6 text-center">
-                  <div className="text-5xl mb-3">✅</div>
-                  <div className="text-emerald-400 font-bold text-lg">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-gradient-to-r from-emerald-500/20 to-green-500/20 border-2 border-emerald-500/40 rounded-3xl p-6 sm:p-8 text-center backdrop-blur-sm"
+                >
+                  <motion.div
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                    className="text-5xl mb-3"
+                  >
+                    {allAnswered ? '🎉' : '✅'}
+                  </motion.div>
+                  <div className="text-emerald-300 font-bold text-lg sm:text-xl">
                     {allAnswered
-                      ? 'Semua pertanyaan sudah dijawab!'
-                      : 'Jawaban terkirim! Tunggu pertanyaan berikutnya.'}
+                      ? '🎊 Semua pertanyaan sudah dijawab! 🎊'
+                      : '✨ Jawaban terkirim! Tunggu pertanyaan berikutnya. ✨'}
                   </div>
-                </div>
+                </motion.div>
               )}
             </>
           ) : (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">🎯</div>
-              <div className="text-slate-400 text-lg">
-                Menunggu operator memulai soal...
-              </div>
-            </div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-12 sm:py-16"
+            >
+              <motion.div
+                animate={{ 
+                  rotate: [0, 10, -10, 0],
+                  scale: [1, 1.1, 1]
+                }}
+                transition={{ 
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: 'easeInOut'
+                }}
+                className="text-7xl sm:text-8xl mb-6"
+              >
+                {statusMsg?.emoji || '🎯'}
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="text-slate-300 text-lg sm:text-xl font-semibold"
+              >
+                {statusMsg?.text || 'Menunggu operator memulai soal...'}
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className="mt-4 text-sm text-slate-500"
+              >
+                ⏳ Sabar ya, game akan segera dimulai!
+              </motion.div>
+            </motion.div>
           )}
         </div>
-      </div>
+      </motion.div>
+
+      <AlertModal
+        isOpen={alertState.isOpen}
+        message={alertState.message}
+        type={alertState.type}
+        onConfirm={alertState.onConfirm}
+        onCancel={alertState.onCancel}
+        confirmText={alertState.type === 'confirm' ? 'Ya' : 'OK'}
+        cancelText="Batal"
+      />
     </div>
   )
 }

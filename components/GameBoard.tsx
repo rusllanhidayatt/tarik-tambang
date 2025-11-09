@@ -18,12 +18,25 @@ export default function GameBoard({ question, scores }: any) {
 
   if (!question) {
     return (
-      <div className="card text-center py-32">
-        <div className="text-slate-600 text-6xl mb-4">🎯</div>
-        <div className="text-slate-400 text-xl font-semibold">
+      <div className="card text-center py-32 relative overflow-hidden">
+        <motion.div
+          animate={{ 
+            rotate: [0, 10, -10, 0],
+            scale: [1, 1.1, 1]
+          }}
+          transition={{ 
+            duration: 2,
+            repeat: Infinity,
+            ease: 'easeInOut'
+          }}
+          className="text-7xl mb-6"
+        >
+          🎯
+        </motion.div>
+        <div className="text-slate-300 text-xl sm:text-2xl font-bold mb-3">
           Menunggu pertanyaan...
         </div>
-        <div className="text-slate-500 text-sm mt-2">
+        <div className="text-slate-400 text-sm sm:text-base mt-2">
           Klik "Start Game" untuk memulai
         </div>
       </div>
@@ -40,11 +53,12 @@ export default function GameBoard({ question, scores }: any) {
         {/* Category Badge */}
         {question.category && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/30 rounded-full mb-4"
+            initial={{ opacity: 0, scale: 0.8, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 300 }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-vibrant-orange/20 via-magenta/20 to-electric-blue/20 border-2 border-vibrant-orange/40 rounded-full mb-4 backdrop-blur-sm"
           >
-            <span className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">
+            <span className="text-xs sm:text-sm font-black text-white uppercase tracking-wider">
               📚 {question.category}
             </span>
           </motion.div>
@@ -53,18 +67,21 @@ export default function GameBoard({ question, scores }: any) {
         <AnimatePresence mode="wait">
           <motion.h3
             key={question.question}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.35 }}
-            className="text-3xl font-bold text-white drop-shadow-lg leading-tight"
+            initial={{ opacity: 0, y: 30, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+            transition={{ duration: 0.4, type: 'spring', stiffness: 200 }}
+            className="text-2xl sm:text-3xl md:text-4xl font-black text-white drop-shadow-2xl leading-tight"
+            style={{
+              textShadow: '0 2px 10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 212, 255, 0.3)'
+            }}
           >
             {question.question}
           </motion.h3>
         </AnimatePresence>
       </div>
 
-      <div className="relative h-64 mt-12 flex justify-center items-center">
+      <div className="relative h-64 sm:h-80 mt-12 flex justify-center items-center">
         {/* center guideline with pulsing indicator */}
         <motion.div
           animate={{
@@ -172,18 +189,22 @@ export default function GameBoard({ question, scores }: any) {
               damping: 25,
               rotate: { repeat: scores.left > scores.right ? 3 : 0, duration: 0.2 }
             }}
-            className="text-blue-400 font-extrabold mt-2 text-2xl drop-shadow-lg"
+            className="text-electric-blue-light font-black mt-2 text-2xl sm:text-3xl drop-shadow-2xl"
+            style={{
+              textShadow: '0 0 20px rgba(0, 212, 255, 0.6), 0 0 40px rgba(0, 212, 255, 0.3)'
+            }}
           >
             {scores.left} pts
           </motion.div>
 
           {highEnergy && offset < -4 && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0 }}
-              animate={{ opacity: [0, 0.6, 0], scale: [0.5, 1.5, 2] }}
-              transition={{ repeat: Infinity, duration: 1 }}
-              className="absolute -right-4 top-8 w-4 h-4 rounded-full bg-blue-400/30 blur-sm"
-            />
+          <motion.div
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: [0, 0.8, 0], scale: [0.5, 1.5, 2] }}
+            transition={{ repeat: Infinity, duration: 1 }}
+            className="absolute -right-4 top-8 w-4 h-4 rounded-full bg-electric-blue/50 blur-sm"
+            style={{ boxShadow: '0 0 20px rgba(0, 212, 255, 0.5)' }}
+          />
           )}
         </motion.div>
 
@@ -234,18 +255,22 @@ export default function GameBoard({ question, scores }: any) {
               damping: 25,
               rotate: { repeat: scores.right > scores.left ? 3 : 0, duration: 0.2 }
             }}
-            className="text-pink-400 font-extrabold mt-2 text-2xl drop-shadow-lg"
+            className="text-magenta-light font-black mt-2 text-2xl sm:text-3xl drop-shadow-2xl"
+            style={{
+              textShadow: '0 0 20px rgba(255, 0, 255, 0.6), 0 0 40px rgba(255, 0, 255, 0.3)'
+            }}
           >
             {scores.right} pts
           </motion.div>
 
           {highEnergy && offset > 4 && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0 }}
-              animate={{ opacity: [0, 0.6, 0], scale: [0.5, 1.5, 2] }}
-              transition={{ repeat: Infinity, duration: 1 }}
-              className="absolute -left-4 top-8 w-4 h-4 rounded-full bg-pink-400/30 blur-sm"
-            />
+          <motion.div
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: [0, 0.8, 0], scale: [0.5, 1.5, 2] }}
+            transition={{ repeat: Infinity, duration: 1 }}
+            className="absolute -left-4 top-8 w-4 h-4 rounded-full bg-magenta/50 blur-sm"
+            style={{ boxShadow: '0 0 20px rgba(255, 0, 255, 0.5)' }}
+          />
           )}
         </motion.div>
       </div>

@@ -9,9 +9,14 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="id">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+      </head>
       <body>
-        <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-slate-100">
-          <div className="max-w-6xl mx-auto p-6">{children}</div>
+        <main className="min-h-screen relative">
+          <div className="max-w-7xl mx-auto p-4 md:p-6 relative z-10">{children}</div>
         </main>
       </body>
     </html>
