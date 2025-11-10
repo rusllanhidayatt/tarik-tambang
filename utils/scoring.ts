@@ -7,28 +7,57 @@ export function calcScore(
   unanswered = false,
   partial = 0
 ) {
-  // Kalau tidak menjawab
-  if (unanswered) return -10
+  // Kalau tidak menjawab - penalty terbesar
+  if (unanswered) return -40
 
-  // Rasio waktu tersisa
+  // Rasio waktu tersisa (1.0 = jawab instant, 0.0 = waktu habis)
   const ratio = Math.max(0, remaining) / Math.max(1, maxTime)
-  let base = Math.round(100 * ratio)
 
-  // Jawaban sebagian benar (parsial)
-  if (!correct && partial > 0) {
-    // Misal 70% pengali dari hasil parsial
-    base = Math.round(partial * ratio * 0.7)
+  // ✅ JAWABAN BENAR - 60 sampai 100 poin
+  // Cepat = 100, lambat = 60 (tetap dapat reward lumayan)
+  if (correct) {
+    const score = Math.round(60 + (40 * ratio))
+    if (DEV_MODE) {
+      return Math.min(50, score)
+    }
+    return score
   }
 
-  // Kalau DEV_MODE aktif → batasi range skor biar mudah debug
+  // ⚡ JAWABAN PARTIAL - 10 sampai 45 poin (tergantung kualitas & waktu)
+  if (partial > 0) {
+    // Hitung base dari persentase kebenaran
+    // partial 100% = 45 poin max, partial 50% = 25 poin, partial 25% = 15 poin
+    const partialRatio = partial / 100 // 0.0 - 1.0
+    const basePartial = 10 + (35 * partialRatio) // 10-45 poin
+
+    // Dikali faktor waktu (cepat = lebih tinggi)
+    // Minimal 60% dari base, maksimal 100% dari base
+    const timeFactor = 0.6 + (0.4 * ratio)
+    let partialScore = Math.round(basePartial * timeFactor)
+
+    // Batasi partial di akhir waktu: max 15 poin
+    // ratio < 0.33 = sisa waktu < 33% dari total
+    if (ratio < 0.33) {
+      partialScore = Math.min(15, partialScore)
+    }
+
+    if (DEV_MODE) {
+      return Math.min(50, partialScore)
+    }
+
+    return Math.max(10, partialScore) // Minimal 10 poin untuk usaha
+  }
+
+  // ❌ JAWABAN SALAH - minus 15 sampai -35 poin
+  // Cepat salah = -35 (punishment nebak asal)
+  // Lambat salah = -15 (sudah usaha mikir)
+  const penalty = Math.round(15 + (20 * ratio))
+
   if (DEV_MODE) {
-    const sign = correct ? 1 : -1
-    return Math.max(-50, Math.min(50, sign * base))
+    return Math.max(-50, -penalty)
   }
 
-  // Normal mode
-  const sign = correct ? 1 : -1
-  return sign * base
+  return -penalty
 }
 
 export function answerMatches(expected: string, given: string) {
