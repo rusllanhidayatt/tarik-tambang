@@ -336,3 +336,33 @@ export async function getTopContributors(sessionId: string, team: 'boy' | 'girl'
 
   return contributors
 }
+
+export async function getAllPlayerScores(sessionId: string) {
+  const { data, error } = await supabase
+    .from('player_answers')
+    .select('player_name, score, team')
+    .eq('session_id', sessionId)
+
+  if (error) throw error
+
+  // Group by player_name and sum scores, also track team
+  const playerTotals: Record<string, { total_score: number; team: 'boy' | 'girl' }> = {}
+  data?.forEach((answer) => {
+    const playerName = answer.player_name
+    if (!playerTotals[playerName]) {
+      playerTotals[playerName] = { total_score: 0, team: answer.team }
+    }
+    playerTotals[playerName].total_score += answer.score
+  })
+
+  // Convert to array and sort by total score (descending)
+  const allPlayers = Object.entries(playerTotals)
+    .map(([player_name, { total_score, team }]) => ({
+      player_name,
+      total_score,
+      team
+    }))
+    .sort((a, b) => b.total_score - a.total_score)
+
+  return allPlayers
+}

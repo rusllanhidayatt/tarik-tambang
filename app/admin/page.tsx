@@ -16,7 +16,8 @@ import {
   subscribeToTeamScores,
   getTeamScores,
   clearAllGameData,
-  getTopContributors
+  getTopContributors,
+  getAllPlayerScores
 } from '../../lib/supabase-helpers'
 
 export default function Admin() {
@@ -36,6 +37,7 @@ export default function Admin() {
   const [gameEnded, setGameEnded] = useState(false)
   const [showVictoryModal, setShowVictoryModal] = useState(false)
   const [topContributors, setTopContributors] = useState<Array<{ player_name: string; total_score: number }>>([])
+  const [leaderboard, setLeaderboard] = useState<Array<{ player_name: string; total_score: number; team: 'boy' | 'girl' }>>([])
   const [alertState, setAlertState] = useState<{ isOpen: boolean; message: string; type: 'alert' | 'confirm'; onConfirm?: () => void; onCancel?: () => void }>({ isOpen: false, message: '', type: 'alert' })
   const confirmResolveRef = useRef<((value: boolean) => void) | null>(null)
   const sfxRef = useRef({ point: null as HTMLAudioElement | null, wrong: null as HTMLAudioElement | null, win: null as HTMLAudioElement | null })
@@ -263,7 +265,7 @@ export default function Admin() {
 
     console.log('🔌 Using Realtime for player answers')
 
-    const handleAnswer = (answer: any) => {
+    const handleAnswer = async (answer: any) => {
       const side = answer.team === 'boy' ? 'left' : 'right'
       const delta = answer.score
 
@@ -292,6 +294,14 @@ export default function Admin() {
 
       setRecentAnswers(prev => [rec, ...prev].slice(0, 12))
 
+      // Update leaderboard
+      try {
+        const updatedLeaderboard = await getAllPlayerScores(sessionId)
+        setLeaderboard(updatedLeaderboard)
+      } catch (error) {
+        console.error('Error updating leaderboard:', error)
+      }
+
       // Add sparkle effect with fun reactions
       const reactions = answer.is_correct
         ? ['🔥', '⚡', '💯', '✨', '🌟', '💪', '🎯', '👏', '🚀', '💥']
@@ -314,6 +324,25 @@ export default function Admin() {
     return () => {
       channel.unsubscribe()
     }
+  }, [sessionId])
+
+  // Load initial leaderboard
+  useEffect(() => {
+    if (!sessionId) return
+    
+    async function loadLeaderboard() {
+      try {
+        const data = await getAllPlayerScores(sessionId)
+        setLeaderboard(data)
+      } catch (error) {
+        console.error('Error loading leaderboard:', error)
+      }
+    }
+    
+    loadLeaderboard()
+    // Refresh leaderboard every 3 seconds
+    const interval = setInterval(loadLeaderboard, 3000)
+    return () => clearInterval(interval)
   }, [sessionId])
 
   // Subscribe to team scores (using Realtime)
@@ -400,7 +429,7 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 md:p-6 fade-in">
+    <div className="h-screen overflow-auto fade-in -mr-24 -ml-24 -mt-1">
       {showConfetti && <Confetti />}
 
       {/* Header Bar */}
@@ -453,7 +482,7 @@ export default function Admin() {
       </AnimatePresence>
 
       {/* Controls dengan gradient glow - Dipindah ke atas */}
-      <div className="flex justify-center items-center gap-2 md:gap-3 mb-6 flex-wrap">
+      <div className="flex justify-center items-center gap-2 md:gap-3 mb-4 flex-wrap p-2">
         {index === -1 ? (
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -513,6 +542,7 @@ export default function Admin() {
               setShowConfetti(false)
               setRecentAnswers([])
               setTopContributors([])
+              setLeaderboard([])
             } catch (error) {
               console.error('Error resetting game:', error)
               customAlert('Error resetting game. Check console.')
@@ -527,13 +557,17 @@ export default function Admin() {
         </motion.button>
       </div>
 
-      {/* GameBoard - Visual Tarik Tambang */}
-      <div className="mb-6">
-        <GameBoard question={rows[index]} scores={scores} />
-      </div>
+      {/* Main Content Grid - 2 Columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 h-[calc(100vh-180px)] p-2">
+        {/* Left Column: GameBoard + Score Display */}
+        <div className="space-y-4 h-full flex flex-col">
+          {/* GameBoard - Visual Tarik Tambang */}
+          <div>
+            <GameBoard question={rows[index]} scores={scores} />
+          </div>
 
-      {/* Score Display */}
-      <div className="card mb-6">
+          {/* Score Display */}
+          <div className="card">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 items-center">
           {/* Boy/Ikhwan Score */}
           <motion.div
@@ -671,16 +705,92 @@ export default function Admin() {
             <div className="text-xs text-slate-400 font-semibold">Points</div>
           </motion.div>
         </div>
-      </div>
-
-      {/* Recent Answers */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="text-lg font-bold text-white">Recent Answers</h4>
-          <div className="text-xs text-slate-500">{recentAnswers.length} answers</div>
+          </div>
         </div>
 
-        <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+        {/* Right Column: Leaderboard + Recent Answers */}
+        <div className="h-full flex flex-col gap-4">
+          {/* Leaderboard - Top 5 */}
+          <div className="card flex flex-col flex-shrink-0">
+            <div className="flex items-center justify-between mb-4 flex-shrink-0">
+              <h4 className="text-lg font-bold text-white">🏆 Top 5</h4>
+              <div className="text-xs text-slate-500">{Math.min(leaderboard.length, 5)} players</div>
+            </div>
+
+            <div className="space-y-2 pr-2">
+              {leaderboard.length === 0 && (
+                <div className="text-center py-8">
+                  <div className="text-slate-600 text-4xl mb-2">📊</div>
+                  <div className="text-slate-400 text-sm">Belum ada skor</div>
+                </div>
+              )}
+
+              <AnimatePresence mode="popLayout">
+                {leaderboard.slice(0, 5).map((player, idx) => {
+                const playerObj = players.find(x => x.name === player.player_name) || null
+                const aliasDisplay = playerObj?.aliases?.[0] || player.player_name
+                const rank = idx + 1
+                const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null
+
+                return (
+                  <motion.div
+                    key={player.player_name}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20, height: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className={`p-3 rounded-xl bg-slate-800/50 border-l-4 hover:bg-slate-700/50 transition-colors ${
+                      rank === 1 ? 'ring-2 ring-yellow-400/50' : 
+                      rank === 2 ? 'ring-2 ring-slate-300/50' : 
+                      rank === 3 ? 'ring-2 ring-amber-500/50' : ''
+                    }`}
+                    style={{
+                      borderLeftColor: player.team === 'boy' ? '#3b82f6' : '#ec4899'
+                    }}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {medal ? (
+                            <span className="text-2xl">{medal}</span>
+                          ) : (
+                            <span className="text-sm font-bold text-slate-500 w-6 text-center">#{rank}</span>
+                          )}
+                        </div>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg flex-shrink-0 ${
+                          player.team === 'boy' ? 'bg-gradient-to-br from-blue-500 to-blue-600' : 'bg-gradient-to-br from-pink-500 to-pink-600'
+                        }`}>
+                          {aliasDisplay?.[0]?.toUpperCase() || player.player_name?.[0]}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-sm text-white truncate">{aliasDisplay}</div>
+                          <div className="text-xs text-slate-400 truncate">{player.player_name}</div>
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <div className={`font-black text-lg ${
+                          player.total_score >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                        }`}>
+                          {player.total_score >= 0 ? '+' : ''}{player.total_score}
+                        </div>
+                        <div className="text-xs text-slate-500">points</div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )
+                })}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* Recent Answers */}
+          <div className="card flex flex-col flex-1 min-h-0 overflow-hidden">
+            <div className="flex items-center justify-between mb-4 flex-shrink-0">
+              <h4 className="text-lg font-bold text-white">Recent Answers</h4>
+              <div className="text-xs text-slate-500">{recentAnswers.length} answers</div>
+            </div>
+
+            <div className="space-y-2 flex-1 overflow-y-auto pr-2 custom-scrollbar max-h-[400px]">
           {recentAnswers.length === 0 && (
             <div className="text-center py-12">
               <div className="text-slate-600 text-5xl mb-3">📝</div>
@@ -724,23 +834,15 @@ export default function Admin() {
                     </div>
                   </div>
                 </div>
-                {r.answerText && (
-                  <div className="mt-2 pl-13 text-xs">
-                    <span className="text-slate-500">Jawaban: </span>
-                    <span className={`font-semibold ${
-                      r.correct ? 'text-emerald-400' : 'text-rose-400'
-                    }`}>
-                      {r.answerText}
-                    </span>
-                  </div>
-                )}
               </motion.div>
             ))}
           </AnimatePresence>
-        </div>
+            </div>
 
-        <div className="mt-4 pt-4 border-t border-slate-700 text-xs text-slate-500 text-center">
-          ⚠️ Jawaban salah akan mengurangi poin (penalty)
+            <div className="mt-4 pt-4 border-t border-slate-700 text-xs text-slate-500 text-center flex-shrink-0">
+              ⚠️ Jawaban salah akan mengurangi poin (penalty)
+            </div>
+          </div>
         </div>
       </div>
 
@@ -913,8 +1015,8 @@ export default function Admin() {
                   )}
                 </div>
 
-                {/* Top 3 Contributors - hanya tampil jika ada pemenang */}
-                {topContributors.length > 0 && (
+                {/* Top 3 Contributors - dari leaderboard */}
+                {leaderboard.length >= 3 && (
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -923,18 +1025,18 @@ export default function Admin() {
                   >
                     <div className="text-xl md:text-2xl font-black text-yellow-400 mb-3 flex items-center justify-center gap-2">
                       <span>🏆</span>
-                      <span>Tiga Jagoan Penarik Skor</span>
+                      <span>Tiga Jagoan Yang Dapet Permen</span>
                       <span>🏆</span>
                     </div>
                     <div className="space-y-2">
-                      {topContributors.map((contributor, idx) => {
-                        const playerObj = players.find(x => x.name === contributor.player_name) || null
-                        const aliasDisplay = playerObj?.aliases?.[0] || contributor.player_name
+                      {leaderboard.slice(0, 3).map((player, idx) => {
+                        const playerObj = players.find(x => x.name === player.player_name) || null
+                        const aliasDisplay = playerObj?.aliases?.[0] || player.player_name
                         const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'
                         
                         return (
                           <motion.div
-                            key={contributor.player_name}
+                            key={player.player_name}
                             initial={{ opacity: 0, x: 0 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.4 + idx * 0.1 }}
@@ -949,14 +1051,14 @@ export default function Admin() {
                             <div className="flex items-center gap-3">
                               <div className="text-3xl">{medal}</div>
                               <div>
-                                <div className="text-md md:text-xl font-black text-white">{contributor.player_name}</div>
+                                <div className="text-md md:text-xl font-black text-white">{player.player_name}</div>
                               </div>
                             </div>
                             <div className="text-right">
                               <div className={`text-2xl md:text-3xl font-black ${
-                                contributor.total_score >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                                player.total_score >= 0 ? 'text-emerald-400' : 'text-rose-400'
                               }`}>
-                                {contributor.total_score >= 0 ? '+' : ''}{contributor.total_score}
+                                {player.total_score >= 0 ? '+' : ''}{player.total_score}
                               </div>
                               <div className="text-xs text-slate-400">points</div>
                             </div>
