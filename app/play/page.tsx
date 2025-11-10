@@ -237,15 +237,18 @@ export default function Play() {
 
     try {
       // Jawaban kosong = salah (dapat penalty)
-      const ok = trimmedAnswer ? answerMatches(current.answer, trimmedAnswer) : false
-      const score = calcScore(current.timeSec, timeLeft, ok)
+      const okResult = trimmedAnswer ? answerMatches(current.answer, trimmedAnswer) : false
+      const isCorrect = typeof okResult === 'object' ? okResult.correct : okResult
+      const unanswered = typeof okResult === 'object' ? okResult.unanswered : !trimmedAnswer
+      const partial = typeof okResult === 'object' ? okResult.partial : 0
+      const score = calcScore(current.timeSec, timeLeft, isCorrect, unanswered, partial)
 
       await submitAnswer(
         session.name,
         session.team,
         current.no,
         trimmedAnswer || '(kosong)',
-        ok,
+        isCorrect,
         score,
         timeLeft,
         sessionId

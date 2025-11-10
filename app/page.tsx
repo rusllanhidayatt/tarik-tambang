@@ -125,7 +125,7 @@ export default function Page() {
           className="mt-8 bg-gradient-to-r from-electric-blue/10 via-magenta/10 to-vibrant-orange/10 rounded-2xl p-4 border-2 border-electric-blue/20 backdrop-blur-sm"
         >
           <div className="text-sm text-slate-300 text-center flex items-center justify-center gap-2">
-            <span>Namanya sesuai yang terdaftar di list sembako yaa, bukan nama samaran</span>
+            <span>Namanya sesuai yang terdaftar di list sembako yaaa</span>
           </div>
         </motion.div>
 
