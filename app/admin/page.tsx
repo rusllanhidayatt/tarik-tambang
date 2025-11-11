@@ -429,7 +429,7 @@ export default function Admin() {
   }
 
   return (
-    <div className="h-screen overflow-auto fade-in -mr-24 -ml-24 -mt-1">
+    <div className="h-screen overflow-auto fade-in -mr-18 -ml-18 -mt-1">
       {showConfetti && <Confetti />}
 
       {/* Header Bar */}
