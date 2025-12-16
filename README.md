@@ -260,10 +260,121 @@ Format contoh:
     "answer": "Syahadat"
   }
 ]
+=======
+# Tarik Tambang — Quiz Multiplayer
+
+Game quiz **tim merah vs tim biru** berbasis realtime & sesi terbatas.
+
+---
+
+## 🎮 Cara Main (Untuk Pemain)
+
+1. Masuk ke game lewat URL utama:
+
+   > [https://domainkamu.com](https://domainkamu.com)
+2. Isi nama sesuai daftar yang sudah terdaftar di file `players.ts`
+
+   * Bisa pakai **nama lengkap** atau **alias**
+3. Setelah masuk → kamu langsung ke halaman **Play**
+4. Jawab pertanyaan yang muncul
+
+   * ✅ Benar → tim menang 1 poin + efek spark
+   * ❌ Salah → bunyi boop
+5. Skor tim ditampilkan **realtime** di tampilan game
+6. Game berjalan dalam **sesi** (default: 1 jam)
+7. Kalau pindah device/login lagi:
+
+   * Selama sesi **belum habis**, status tetap tersimpan
+   * Kalau sesi habis → harus login ulang saat admin buka sesi baru
+
+> Semua data login **hanya disimpan di browser** (`sessionStorage`)
+
+---
+
+## 🧩 Alur Aplikasi
+
+| Role           | URL                                | Fitur                                 |
+| -------------- | ---------------------------------- | ------------------------------------- |
+| Pemain         | `/`                                | Login nama → main quiz                |
+| Game View (TV) | `/admin`                           | Tampilan animasi tarik tambang & skor |
+| Admin          | `/admin`                           | Kelola sesi, kontrol soal, reset, dsb |
+| Datasource     | `/datasource` atau custom endpoint | Menyediakan daftar pertanyaan         |
+
+---
+
+## 🧑‍💻 Admin Panel (Sederhana)
+
+* Set **durasi sesi**
+* Push **pertanyaan** ke semua pemain
+* **Start / Pause / End** sesi
+* Reset skor & status pemain
+
+> Admin login juga pakai nama yang ada di `players.ts` (role admin ditentukan dari config)
+
+---
+
+## 🔊 / 🎨 Asset
+
+Taruh semua asset di folder:
+
+```
+public/
 ```
 
-Datasource bisa berupa:
+### ✅ Sudah dipakai
 
+* `boy.png`
+* `girl.png`
+
+### 📌 Tambahan Sound Effect
+
+```
+/public/sfx/point.wav   → efek poin + spark
+/public/sfx/wrong.wav   → efek jawaban salah (boop)
+/public/sfx/win.mp3     → efek kemenangan / fanfare
+```
+
+> Boleh pakai **placeholder** terlebih dahulu (durasi 1 detik)
+
+---
+
+## 🧱 Struktur Utama Project
+
+```
+src/
+ ├── app/
+ │    ├── page.tsx          → halaman login pemain
+ │    ├── play/page.tsx     → gameplay & animasi tarik tambang
+ │    └── admin/page.tsx    → admin panel
+ │
+ ├── utils/players.ts       → daftar pemain (nama & tim)
+ └── utils/data.ts          → sumber pertanyaan (opsional API)
+```
+
+---
+
+## 🌐 State & Persistensi
+
+Login pemain disimpan melalui:
+
+```
+sessionStorage.tt_session
+```
+
+Berisi:
+
+```json
+{
+  "name": "Nama Pemain",
+  "team": "red|blue",
+  "lastActivity": 1731056183929
+}
+>>>>>>> 4edbdca (feat: Revise README for clarity and detail on multiplayer quiz game features)
+```
+
+---
+
+<<<<<<< HEAD
 * API internal
 * File JSON lokal
 * Endpoint eksternal
@@ -381,62 +492,3 @@ Kalau mau:
 * Animasi lebih brutal 😈
 
 👉 tinggal bilang, gas lanjut!
-=======
-## ⚙️ Development
-
-```bash
-npm install
-npm run dev
-```
-
-Akses:
-
-* Pemain → [http://localhost:3000](http://localhost:3000)
-* Admin / TV → [http://localhost:3000/admin](http://localhost:3000/admin)
-
----
-
-## 🚀 Deployment
-
-Build production:
-
-```bash
-npm run build
-npm start
-```
-
-Direkomendasikan:
-
-* Vercel
-* Netlify
-* Railway
-
----
-
-## 🧩 Catatan Teknis
-
-* Tidak menggunakan database
-* Semua state berbasis memory & session
-* Realtime menggunakan event broadcast
-* Fokus untuk **short-lived event**
-
----
-
-## 🧑‍🤝‍🧑 Tim Pengembang
-
-**SKS TEAM**
-
-"Tarikannya digital, serunya real." 🔥
-
----
-
-### Next Improvement (Opsional)
-
-* Mode 3+ tim
-* Ranking individu
-* QR Code login
-* Mode knock-out
-* Tema visual custom
-
-> Pull request & ide sangat diterima ✨
->>>>>>> a3dcecb (Update README)
