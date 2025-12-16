@@ -326,9 +326,9 @@ export default function Play() {
   const statusMsg = getStatusMessage()
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-[100dvh] flex items-start sm:items-center justify-center px-1 py-6 sm:p-4 relative overflow-hidden">
       {/* Decorative background elements */}
-      <div className={`absolute top-10 ${session?.team === 'boy' ? 'left-10' : 'right-10'} text-5xl opacity-10 animate-bounce-glow`}>
+      <div className={`absolute top-8 ${session?.team === 'boy' ? 'left-6' : 'right-6'} text-4xl sm:text-5xl opacity-10 animate-bounce-glow`}>
         {session?.team === 'boy' ? '👳🏻‍♂️' : '🧕🏻'}
       </div>
       
@@ -339,18 +339,19 @@ export default function Play() {
         className={`card max-w-2xl w-full border-2 ${teamBorder} ${teamGlow} shadow-2xl relative z-10`}
       >
         {/* Player Info Header dengan avatar besar */}
-        <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between mb-6 pb-6 border-b border-white/10 gap-4">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between mb-5 sm:mb-6 pb-5 sm:pb-6 border-b border-white/10 gap-4">
           <div className="flex items-center gap-4">
             <motion.div
               whileHover={{ scale: 1.1, rotate: 5 }}
-              className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br ${teamBg} flex items-center justify-center text-white text-3xl sm:text-4xl font-black shadow-2xl border-4 border-white/20`}
+              className={`w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br ${teamBg} flex items-center justify-center text-white text-2xl sm:text-4xl font-black shadow-2xl border-4 border-white/20`}
             >
               {session?.name?.[0]?.toUpperCase()}
             </motion.div>
             <div>
-              <div className="text-2xl sm:text-3xl font-black text-white mb-1">{session?.name}</div>
+              <div className="text-xl sm:text-3xl font-black text-white mb-1 break-words">{session?.name}</div>
               <div className="text-sm sm:text-base text-slate-300">
-                Team: <span className={`font-bold ${teamText} text-lg`}>
+                Team:{' '}
+                <span className={`font-bold ${teamText} text-base sm:text-lg`}>
                   {session?.team === 'boy' ? 'Ikhwan' : 'Akhwat'} {teamEmoji}
                 </span>
               </div>
@@ -362,7 +363,7 @@ export default function Play() {
             className="text-center sm:text-right"
           >
             <div className="text-xs text-slate-400 mb-1 font-semibold">Waktu Tersisa</div>
-            <div className={`text-5xl sm:text-6xl font-black tabular-nums transition-all duration-300 ${
+            <div className={`text-4xl sm:text-6xl font-black tabular-nums transition-all duration-300 ${
               timeLeft < 5 ? 'text-rose-500 pulse-glow' : timeLeft < 10 ? 'text-yellow-400' : teamTimerColor
             }`} style={{ textShadow: `0 0 20px ${timeLeft < 5 ? 'rgba(239, 68, 68, 0.5)' : timeLeft < 10 ? 'rgba(251, 191, 36, 0.5)' : 'rgba(0, 212, 255, 0.3)'}` }}>
               {timeLeft}s
@@ -400,7 +401,7 @@ export default function Play() {
               {!hasAnsweredState && !allAnswered ? (
                 <div className="space-y-5">
                   <input
-                    className={`input text-lg ${teamInputBorder}`}
+                    className={`input ${teamInputBorder}`}
                     placeholder="💭 Ketik jawaban kamu di sini..."
                     value={answer}
                     onChange={(e) => setAnswer(e.target.value)}
@@ -409,6 +410,7 @@ export default function Play() {
                         submit()
                       }
                     }}
+                    enterKeyHint="send"
                     disabled={!isActive}
                     autoFocus
                   />
@@ -416,7 +418,7 @@ export default function Play() {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className={`button w-full text-lg sm:text-xl py-5 ${teamBg} bg-gradient-to-r font-black`}
+                    className={`button w-full text-lg sm:text-xl py-4 sm:py-5 ${teamBg} bg-gradient-to-r font-black`}
                     onClick={submit}
                     disabled={!isActive}
                   >
