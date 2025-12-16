@@ -3,18 +3,14 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 
 export default function GameBoard({ question, scores }: any) {
-  const [shakeKey, setShakeKey] = useState(0)
-  const [offset, setOffset] = useState(0)
+  const shakeKey = useMemo(() => `${scores?.left ?? 0}-${scores?.right ?? 0}`, [scores?.left, scores?.right])
 
-  useEffect(() => {
-    setShakeKey(k => k + 1)
-    // Offset berdasarkan selisih score saja: 2% per poin
-    // Positif = Akhwat (right) unggul, Negatif = Ikhwan (left) unggul
-    setOffset((scores.right - scores.left) * 2) // 2% per point difference
-  }, [scores])
+  // Offset berdasarkan selisih score saja: 2% per poin
+  // Positif = Akhwat (right) unggul, Negatif = Ikhwan (left) unggul
+  const offset = ((scores?.right ?? 0) - (scores?.left ?? 0)) * 2
 
   if (!question) {
     return (
@@ -37,7 +33,7 @@ export default function GameBoard({ question, scores }: any) {
           Menunggu pertanyaan...
         </div>
         <div className="text-slate-400 text-sm sm:text-base mt-2">
-          Klik "Start Game" untuk memulai
+          Klik &quot;Start Game&quot; untuk memulai
         </div>
       </div>
     )
@@ -98,7 +94,7 @@ export default function GameBoard({ question, scores }: any) {
         </AnimatePresence>
       </div>
 
-      <div className="relative h-64 sm:h-80 mt-12 flex justify-center items-center overflow-visible">
+        <div className="relative h-64 sm:h-80 mt-12 flex justify-center items-center overflow-visible">
         {/* center guideline with pulsing indicator */}
         <motion.div
           animate={{
@@ -174,7 +170,7 @@ export default function GameBoard({ question, scores }: any) {
             x: { type: 'spring', stiffness: 140, damping: 14 },
             rotate: { type: 'spring', stiffness: 110, damping: 12 }
           }}
-          className="absolute left-[6%] bottom-0 flex flex-col items-center z-20"
+          className="absolute left-[4%] sm:left-[6%] bottom-0 flex flex-col items-center z-20"
           style={{
             maxWidth: '120px'
           }}
@@ -196,7 +192,14 @@ export default function GameBoard({ question, scores }: any) {
               ease: 'easeInOut'
             }}
           >
-            <Image src="/boy.png" alt="Boy" width={120} height={120} priority />
+            <Image
+              src="/boy.png"
+              alt="Boy"
+              width={120}
+              height={120}
+              priority
+              className="w-20 h-20 sm:w-[120px] sm:h-[120px]"
+            />
           </motion.div>
 
           <motion.div
@@ -214,7 +217,7 @@ export default function GameBoard({ question, scores }: any) {
               damping: 25,
               rotate: { repeat: scores.left > scores.right ? 3 : 0, duration: 0.2 }
             }}
-            className="text-electric-blue-light font-black mt-2 text-2xl sm:text-3xl drop-shadow-2xl"
+            className="text-electric-blue-light font-black mt-2 text-xl sm:text-3xl drop-shadow-2xl"
             style={{
               textShadow: '0 0 20px rgba(0, 212, 255, 0.6), 0 0 40px rgba(0, 212, 255, 0.3)'
             }}
@@ -243,7 +246,7 @@ export default function GameBoard({ question, scores }: any) {
             x: { type: 'spring', stiffness: 140, damping: 14 },
             rotate: { type: 'spring', stiffness: 110, damping: 12 }
           }}
-          className="absolute right-[6%] bottom-0 flex flex-col items-center z-20"
+          className="absolute right-[4%] sm:right-[6%] bottom-0 flex flex-col items-center z-20"
           style={{
             maxWidth: '120px'
           }}
@@ -265,7 +268,14 @@ export default function GameBoard({ question, scores }: any) {
               ease: 'easeInOut'
             }}
           >
-            <Image src="/girl.png" alt="Girl" width={120} height={120} priority />
+            <Image
+              src="/girl.png"
+              alt="Girl"
+              width={120}
+              height={120}
+              priority
+              className="w-20 h-20 sm:w-[120px] sm:h-[120px]"
+            />
           </motion.div>
 
           <motion.div
@@ -283,7 +293,7 @@ export default function GameBoard({ question, scores }: any) {
               damping: 25,
               rotate: { repeat: scores.right > scores.left ? 3 : 0, duration: 0.2 }
             }}
-            className="text-magenta-light font-black mt-2 text-2xl sm:text-3xl drop-shadow-2xl"
+            className="text-magenta-light font-black mt-2 text-xl sm:text-3xl drop-shadow-2xl"
             style={{
               textShadow: '0 0 20px rgba(255, 0, 255, 0.6), 0 0 40px rgba(255, 0, 255, 0.3)'
             }}
