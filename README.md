@@ -341,9 +341,3 @@ Berisi:
    * /sfx/wrong.wav — suara salah (boop)
    * /sfx/win.mp3 — suara kemenangan / fanfare
 Kalau belum punya sound, bisa pakai placeholder short mp3/wav (1s).
-<<<<<<< HEAD
-Nama file harus sama seperti di atas.
->>>>>>> 4edbdca (feat: Revise README for clarity and detail on multiplayer quiz game features)
-=======
-Nama file harus sama seperti di atas.
->>>>>>> ba08fa8 (Update README)
