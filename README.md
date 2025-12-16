@@ -309,7 +309,7 @@ Game quiz **tim merah vs tim biru** berbasis realtime & sesi terbatas.
 * **Start / Pause / End** sesi
 * Reset skor & status pemain
 
-> Admin ditentukan dari konfigurasi, bukan login khusus
+> Admin login juga pakai nama yang ada di `players.ts` (role admin ditentukan dari config)
 
 ---
 
