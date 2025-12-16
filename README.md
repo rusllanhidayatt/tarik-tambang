@@ -1,162 +1,218 @@
-# Tarik Tambang — Quiz Multiplayer
+# 🪢 TARIK TAMBANG QUIZ
 
-Game quiz **tim merah vs tim biru** berbasis realtime & sesi terbatas.
+### Multiplayer Realtime • Akhwat vs Ikhwan
 
----
+Game quiz interaktif berbasis **realtime session** dengan konsep **tarik tambang digital**.
+Setiap jawaban benar akan menarik tali ke arah tim masing-masing.
 
-## 🎮 Cara Main (Untuk Pemain)
+Cocok untuk:
 
-1. Masuk ke game lewat URL utama:
-
-   > [https://domainkamu.com](https://domainkamu.com)
-2. Isi nama sesuai daftar yang sudah terdaftar di file `players.ts`
-
-   * Bisa pakai **nama lengkap** atau **alias**
-3. Setelah masuk → kamu langsung ke halaman **Play**
-4. Jawab pertanyaan yang muncul
-
-   * ✅ Benar → tim menang 1 poin + efek spark
-   * ❌ Salah → bunyi boop
-5. Skor tim ditampilkan **realtime** di tampilan game
-6. Game berjalan dalam **sesi** (default: 1 jam)
-7. Kalau pindah device/login lagi:
-
-   * Selama sesi **belum habis**, status tetap tersimpan
-   * Kalau sesi habis → harus login ulang saat admin buka sesi baru
-
-> Semua data login **hanya disimpan di browser** (`sessionStorage`)
+* Acara kajian
+* Games night komunitas
+* Event indoor dengan layar TV / proyektor
 
 ---
 
-## 🧩 Alur Aplikasi
+## 🧠 Konsep Game
 
-| Role           | URL                                | Fitur                                 |
-| -------------- | ---------------------------------- | ------------------------------------- |
-| Pemain         | `/`                                | Login nama → main quiz                |
-| Game View (TV) | `/admin`                           | Tampilan animasi tarik tambang & skor |
-| Admin          | `/admin`                           | Kelola sesi, kontrol soal, reset, dsb |
-| Datasource     | `/datasource` atau custom endpoint | Menyediakan daftar pertanyaan         |
+* Pemain dibagi menjadi **2 tim**:
 
----
-
-## 🧑‍💻 Admin Panel (Sederhana)
-
-* Set **durasi sesi**
-* Push **pertanyaan** ke semua pemain
-* **Start / Pause / End** sesi
-* Reset skor & status pemain
-
-> Admin login juga pakai nama yang ada di `players.ts` (role admin ditentukan dari config)
+  * 👩 Akhwat
+  * 👨 Ikhwan
+* Setiap soal dijawab **secara individu**
+* Jawaban benar menambah **kekuatan tim**
+* Tim dengan skor terbanyak akan **menarik tali sampai garis kemenangan**
 
 ---
 
-## 🔊 / 🎨 Asset
+## 🕹️ Alur Pemain
 
-Taruh semua asset di folder:
+1. Buka halaman utama (`/`)
+2. Masukkan nama (harus terdaftar)
+3. Tunggu admin memulai sesi
+4. Jawab soal yang dikirim
+5. Lihat skor & animasi di layar utama
+
+### Efek Jawaban
+
+| Jawaban | Efek                                    |
+| ------- | --------------------------------------- |
+| Benar   | +1 skor tim, animasi tarik, sound benar |
+| Salah   | Sound salah                             |
+
+---
+
+## 🧑‍💼 Mode Admin & TV View
+
+Admin dan TV menggunakan **endpoint yang sama**:
+
+```
+/admin
+```
+
+### Hak Admin
+
+* Membuka & menutup sesi
+* Menentukan durasi sesi
+* Mengirim soal ke pemain
+* Pause game
+* Reset skor & status
+
+> Admin ditentukan dari konfigurasi, bukan login khusus
+
+---
+
+## ⏱️ Sistem Sesi
+
+* Game berjalan dalam **1 sesi aktif**
+* Default durasi: **60 menit**
+* Selama sesi aktif:
+
+  * Pemain bisa refresh
+  * Pindah device tetap aman
+* Setelah sesi berakhir:
+
+  * Semua pemain harus login ulang
+
+Penyimpanan status menggunakan:
+
+```
+sessionStorage
+```
+
+---
+
+## 👥 Konfigurasi Pemain
+
+Lokasi file:
+
+```
+src/config/players.ts
+```
+
+Contoh:
+
+```ts
+export type Player = {
+  name: string
+  alias?: string
+  team?: 'akhwat' | 'ikhwan'
+  role?: 'player' | 'admin'
+}
+
+export const players: Player[] = [
+  { name: 'Fulan', team: 'ikhwan' },
+  { name: 'Fulana', team: 'akhwat' },
+  { name: 'Admin', role: 'admin' }
+]
+```
+
+---
+
+## 📦 Datasource Soal
+
+Soal dikirim admin dari endpoint:
+
+```
+/datasource
+```
+
+Format soal:
+
+```json
+{
+  "id": "uuid",
+  "question": "Contoh pertanyaan",
+  "options": ["A", "B", "C", "D"],
+  "correct": "C"
+}
+```
+
+Datasource bisa berupa:
+
+* JSON statis
+* API lokal
+* API eksternal
+
+---
+
+## 🎨 Asset & Media
+
+Semua asset diletakkan di:
 
 ```
 public/
 ```
 
-### ✅ Sudah dipakai
-
-* `boy.png`
-* `girl.png`
-
-### 📌 Tambahan Sound Effect
+Struktur contoh:
 
 ```
-/public/sfx/point.wav   → efek poin + spark
-/public/sfx/wrong.wav   → efek jawaban salah (boop)
-/public/sfx/win.mp3     → efek kemenangan / fanfare
-```
-
-> Boleh pakai **placeholder** terlebih dahulu (durasi 1 detik)
-
----
-
-## 🧱 Struktur Utama Project
-
-```
-src/
- ├── app/
- │    ├── page.tsx          → halaman login pemain
- │    ├── play/page.tsx     → gameplay & animasi tarik tambang
- │    └── admin/page.tsx    → admin panel
- │
- ├── utils/players.ts       → daftar pemain (nama & tim)
- └── utils/data.ts          → sumber pertanyaan (opsional API)
+public/
+├─ audio/
+│  ├─ correct.mp3
+│  └─ wrong.mp3
+├─ visual/
+│  ├─ rope.png
+│  └─ background.jpg
+└─ fx/
 ```
 
 ---
 
-## 🌐 State & Persistensi
+## ⚙️ Development
 
-Login pemain disimpan melalui:
-
-```
-sessionStorage.tt_session
-```
-
-Berisi:
-
-```json
-{
-  "name": "Nama Pemain",
-  "team": "red|blue",
-  "lastActivity": 1731056183929
-}
+```bash
+npm install
+npm run dev
 ```
 
----
+Akses:
 
-## 🧪 Testing Cepat
-
-| Uji                  | Harus Berhasil                 |
-| -------------------- | ------------------------------ |
-| Nama tidak terdaftar | Tidak bisa masuk               |
-| Alias sesuai         | Bisa masuk sebagai nama utama  |
-| Berpindah device     | Tetap bisa selama sesi aktif   |
-| Jawab salah/benar    | Ada suara + animasi efek       |
-| Admin end session    | Semua pemain harus login ulang |
+* Pemain → [http://localhost:3000](http://localhost:3000)
+* Admin / TV → [http://localhost:3000/admin](http://localhost:3000/admin)
 
 ---
 
-## 🏆 Kemenangan
+## 🚀 Deployment
 
-* Tim pertama yang mencapai **target poin**, atau
-* Poin tertinggi ketika **sesi selesai**
+Build production:
 
-> Kemenangan → mainkan **win.mp3** + animasi celebration
+```bash
+npm run build
+npm start
+```
 
----
+Direkomendasikan:
 
-## ⚠️ Catatan Teknis
-
-| Hal                       | Status                     |
-| ------------------------- | -------------------------- |
-| Multiplayer Full Realtime | ✅ Poin & progress serentak |
-| Tanpa akun/password       | ✅ Anti ribet               |
-| Session-based             | ✅ Anti spam join           |
-| Anti cheat dasar          | ✅ Validasi nama whitelist  |
+* Vercel
+* Netlify
+* Railway
 
 ---
 
-## 💡 Wishlist Next Update
+## 🧩 Catatan Teknis
 
-* Leaderboard historis
-* Animasi reaksi avatar
-* Efek getar HP saat poin masuk
-* Integrasi API pertanyaan
-* Custom nickname + avatar pilihan
+* Tidak menggunakan database
+* Semua state berbasis memory & session
+* Realtime menggunakan event broadcast
+* Fokus untuk **short-lived event**
 
 ---
 
-## Catatan asset (taruh di public/)
-   * /boy.png (existing)
-   * /girl.png (existing)
-   * /sfx/point.wav — suara poin + spark
-   * /sfx/wrong.wav — suara salah (boop)
-   * /sfx/win.mp3 — suara kemenangan / fanfare
-Kalau belum punya sound, bisa pakai placeholder short mp3/wav (1s).
-Nama file harus sama seperti di atas.
+## 🧑‍🤝‍🧑 Tim Pengembang
+
+**SKS TEAM**
+
+"Tarikannya digital, serunya real." 🔥
+
+---
+
+### Next Improvement (Opsional)
+
+* Mode 3+ tim
+* Ranking individu
+* QR Code login
+* Mode knock-out
+* Tema visual custom
+
+> Pull request & ide sangat diterima ✨
