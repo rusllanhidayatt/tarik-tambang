@@ -309,7 +309,7 @@ Game quiz **tim merah vs tim biru** berbasis realtime & sesi terbatas.
 * **Start / Pause / End** sesi
 * Reset skor & status pemain
 
-> Admin login juga pakai nama yang ada di `players.ts` (role admin ditentukan dari config)
+> Admin ditentukan dari konfigurasi, bukan login khusus
 
 ---
 
@@ -318,6 +318,7 @@ Game quiz **tim merah vs tim biru** berbasis realtime & sesi terbatas.
 Taruh semua asset di folder:
 
 ```
+<<<<<<< HEAD
 public/
 ```
 
@@ -400,19 +401,6 @@ public/
 ├─ images/
 │  └─ rope.png
 └─ animations/
-=======
-Struktur contoh:
-
-```
-public/
-├─ audio/
-│  ├─ correct.mp3
-│  └─ wrong.mp3
-├─ visual/
-│  ├─ rope.png
-│  └─ background.jpg
-└─ fx/
->>>>>>> a3dcecb (Update README)
 ```
 
 ---
@@ -492,3 +480,55 @@ Kalau mau:
 * Animasi lebih brutal 😈
 
 👉 tinggal bilang, gas lanjut!
+=======
+## 🧪 Testing Cepat
+
+| Uji                  | Harus Berhasil                 |
+| -------------------- | ------------------------------ |
+| Nama tidak terdaftar | Tidak bisa masuk               |
+| Alias sesuai         | Bisa masuk sebagai nama utama  |
+| Berpindah device     | Tetap bisa selama sesi aktif   |
+| Jawab salah/benar    | Ada suara + animasi efek       |
+| Admin end session    | Semua pemain harus login ulang |
+
+---
+
+## 🏆 Kemenangan
+
+* Tim pertama yang mencapai **target poin**, atau
+* Poin tertinggi ketika **sesi selesai**
+
+> Kemenangan → mainkan **win.mp3** + animasi celebration
+
+---
+
+## ⚠️ Catatan Teknis
+
+| Hal                       | Status                     |
+| ------------------------- | -------------------------- |
+| Multiplayer Full Realtime | ✅ Poin & progress serentak |
+| Tanpa akun/password       | ✅ Anti ribet               |
+| Session-based             | ✅ Anti spam join           |
+| Anti cheat dasar          | ✅ Validasi nama whitelist  |
+
+---
+
+## 💡 Wishlist Next Update
+
+* Leaderboard historis
+* Animasi reaksi avatar
+* Efek getar HP saat poin masuk
+* Integrasi API pertanyaan
+* Custom nickname + avatar pilihan
+
+---
+
+## Catatan asset (taruh di public/)
+   * /boy.png (existing)
+   * /girl.png (existing)
+   * /sfx/point.wav — suara poin + spark
+   * /sfx/wrong.wav — suara salah (boop)
+   * /sfx/win.mp3 — suara kemenangan / fanfare
+Kalau belum punya sound, bisa pakai placeholder short mp3/wav (1s).
+Nama file harus sama seperti di atas.
+>>>>>>> 4edbdca (feat: Revise README for clarity and detail on multiplayer quiz game features)
